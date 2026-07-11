@@ -1,0 +1,7 @@
+name = "webapp"
+version = "0.1.0"
+defaultTargets = ["webapp"]
+
+[[lean_exe]]
+name = "webapp"
+root = "Main"
