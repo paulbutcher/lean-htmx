@@ -119,6 +119,11 @@ can never affect `Node`'s type or any other call site's ergonomics:
 - `rawAttrs : List (String × String) := []` — arbitrary `(name, value)`
   pairs rendered verbatim (value-escaped, name unchecked). Covers `hx-*`,
   `x-*`, ad hoc `data-*`, anything the typed vocabulary doesn't model.
+  **Names are assumed to always be literal source-code identifiers, never
+  derived from untrusted input** — an attribute name containing a space,
+  `=`, or `>` breaks out of the tag regardless of value-escaping, and
+  nothing in this library checks for that (Phase 3 decision; see
+  `Html.renderRawAttrs`'s `#guard` documenting, not fixing, this).
 - `unsafeRaw : String → Node cat` — verbatim, unescaped markup, trusted
   as-is, usable as content of any category. Covers custom elements
   (`<my-widget>`) or embedding a whole third-party snippet. Name it loudly
@@ -130,6 +135,13 @@ explicitly **out of scope** for any correctness proof written against this
 library — document that boundary clearly (e.g. in module docs) so nobody
 mistakes "the library has proofs" for "everything you can pass to it is
 proven safe."
+
+**URL-valued attributes (`href`, `src`) stay plain `String` for v1**
+(Phase 3 decision, `AAttrs`/`ImgAttrs`) — a deliberate non-goal, not a
+silent gap: `escape_safe` (Phase 2) defends against markup breakout but
+not against a `javascript:`-scheme value, which is a distinct, well-known
+injection vector. A dedicated URL type that rejects dangerous schemes is
+future work, not v1 scope.
 
 ### 1.4 A downstream library (htmx or similar) can still get full type safety — different mechanism than 1.2
 
@@ -358,30 +370,42 @@ as another `Category`.
       broke one, confirmed `lake build` fails, restored).
 
 ### Phase 3 — Attributes
-- [ ] `HtmlAttrs` (global: `id`, `class`; extend with `style`/`title`/
-      `lang`/`dir` per Phase 0 scope).
-- [ ] Per-element typed attribute records where the element has
-      required/typed attributes of its own (`AAttrs` for `<a>`, similarly
-      for `<img>`, `<input>`, etc., per Phase 0 scope).
-- [ ] Decide how boolean attributes (`disabled`, `checked`, `required`,
-      `readonly`) render — bare attribute name when present, absent
-      entirely when not, never `name="false"`. Not a corollary of anything
-      else in the plan; needs its own explicit decision and `#guard` test.
-- [ ] Decide whether URL-valued attributes (`href`, `src`) get a dedicated
-      type, or stay plain `String`. Generic escaping (Phase 2) defends
-      against markup breakout but not against a `javascript:`-scheme value
-      — a distinct, well-known injection vector. If staying `String` for
-      v1, document this as an explicit non-goal alongside the
-      `rawAttrs`/`unsafeRaw` caveats, not a silent gap.
-- [ ] `rawAttrs : List (String × String) := []` on every tag. Decide
-      whether the *name* half gets any validation: the plan so far only
-      escapes the *value*; an attribute name containing a space, `=`, or
-      `>` breaks out of the tag regardless of value-escaping. If names are
-      always literal source-code identifiers in practice, document that
-      assumption explicitly next to the "value-escaped, name unchecked"
-      description in 1.3 rather than leaving the asymmetry unstated.
-- [ ] `#guard` tests per attribute; one test documenting (not fixing) that
-      `rawAttrs` is intentionally unchecked.
+- [x] `HtmlAttrs` (global: `id`, `class`; extended with `style`/`title`/
+      `lang`/`dir` per Phase 0 scope). Implemented in `Html/Attrs.lean` as
+      a plain structure of `Option String` fields, all defaulting to
+      `none`; `class_` (trailing underscore — `class` is a Lean keyword)
+      renders as `class`. Not yet wired into `Node`/tag functions — that's
+      Phase 4.
+- [x] Per-element typed attribute records: `AAttrs` (`<a>`, `href`
+      required), `ImgAttrs` (`<img>`, `src` and `alt` both required),
+      `InputAttrs` (`<input>`, `type` plus optional `name`/`value`/
+      `placeholder` and the four boolean attributes below). Covers the
+      three examples the plan names explicitly; more can be added in
+      Phase 4 following the same pattern as each real tag is built.
+- [x] Boolean attributes (`disabled`, `checked`, `required`, `readonly`):
+      **decision — bare attribute name when `true`, absent entirely when
+      `false`, never `name="false"`** — `Html.renderBoolAttr`, used by
+      `InputAttrs.render`. `#guard`-tested both ways, including the
+      `false` case explicitly (not just omitted).
+- [x] URL-valued attributes (`href`, `src`): **decision — stay plain
+      `String` for v1**, not a dedicated type. Documented as an explicit
+      non-goal both on `AAttrs`/`ImgAttrs` in code and alongside the
+      `rawAttrs`/`unsafeRaw` caveats in section 1.3 above (`escape_safe`
+      defends against markup breakout, not against a `javascript:`-scheme
+      value).
+- [x] `renderRawAttrs : List (String × String) → String` (the primitive
+      Phase 4's tags will each take as `rawAttrs := []`). **Decision: the
+      name half is not validated** — values are escaped, names are
+      assumed to always be literal source-code identifiers per 1.3 (now
+      updated with this assumption stated explicitly, next to the
+      "value-escaped, name unchecked" description).
+- [x] `#guard` tests per attribute (`HtmlAttrs`, `AAttrs`, `ImgAttrs`,
+      `InputAttrs`, `renderBoolAttr`), plus one test on `renderRawAttrs`
+      documenting — not fixing — that a space in an attribute name breaks
+      out of the tag (`("evil onmouseover=\"alert(1)", "x")` renders as
+      literal, structurally-breaking output). Verified the guards catch a
+      regression the same way as Phases 1–2 (deliberately broke one,
+      confirmed `lake build` fails, restored).
 
 ### Phase 4 — Tags
 - [ ] Implement each tag from the Phase 0 list with correct
