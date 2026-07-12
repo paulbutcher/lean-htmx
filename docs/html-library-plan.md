@@ -205,35 +205,101 @@ as another `Category`.
 ## 2. Implementation plan (v1: html only, no htmx)
 
 ### Phase 0 — Scoping decisions (do first, needs a decision each)
-- [ ] Confirm/trim the v1 element list. Proposed starting set: structure
-      (`html`, `head`, `body`, `div`, `section`, `article`, `header`,
-      `footer`, `nav`), text (`p`, `span`, `h1`–`h6`, `ul`, `ol`, `li`,
-      `blockquote`, `pre`, `code`), inline (`a`, `strong`, `em`, `small`,
-      `br` [void]), forms (`form`, `input` [void], `label`, `textarea`,
-      `select`, `option`, `button`), media/void (`img` [void], `hr` [void],
-      `meta` [void], `link` [void]), table (`table`, `thead`, `tbody`,
-      `tr`, `th`, `td`).
-- [ ] Confirm the v1 `Category` lattice: at minimum `flow`/`phrasing`
-      (proven ergonomic); decide whether `metadata` (`head`, `meta`,
-      `link`, `title`) is in scope now or deferred.
-- [ ] Decide file layout: single `Html.lean` vs a module tree
+- [x] Confirm/trim the v1 element list. **Decision: accept the proposed
+      starting set as-is** (structure: `html`, `head`, `body`, `div`,
+      `section`, `article`, `header`, `footer`, `nav`; text: `p`, `span`,
+      `h1`–`h6`, `ul`, `ol`, `li`, `blockquote`, `pre`, `code`; inline: `a`,
+      `strong`, `em`, `small`, `br` [void]; forms: `form`, `input` [void],
+      `label`, `textarea`, `select`, `option`, `button`; media/void: `img`
+      [void], `hr` [void], `meta` [void], `link` [void]; table: `table`,
+      `thead`, `tbody`, `tr`, `th`, `td`). No changes found necessary.
+- [x] Confirm the v1 `Category` lattice. **Decision: `flow`/`phrasing`
+      only, per the proven-ergonomic prototype; `metadata` is deferred.**
+      `head`/`title`/`meta`/`link` are needed for Phase 5's document
+      skeleton but are handled as a special case there (not general
+      `metadata`-category content) rather than by generalizing the lattice
+      now — full metadata-category fidelity is Phase 6 scope.
+- [x] Decide file layout. **Decision: module tree from the start**
       (`Html/Node.lean`, `Html/Escape.lean`, `Html/Attrs.lean`,
-      `Html/Tags.lean`, re-exported from `Html.lean`). Recommend splitting
-      once the tag count grows past what's comfortable in one file.
-- [ ] Add `[[lean_lib]] name = "Html"` to `lakefile.toml`.
-- [ ] Decide `Node`'s internal representation: eager `String` concat at
-      each smart constructor vs. a deferred builder/tree flattened once at
-      `render` (see 1.1). Don't let this default silently — it's expensive
-      to change after Phase 4 has tag functions written against it.
-- [ ] Confirm `<script>`/`<style>` are out of v1 scope, and *why*: they're
-      raw-text elements with JS/CSS escaping rules, not HTML entity
-      escaping — the generic child-escaping logic Phase 2 builds would
-      silently mis-escape their content if someone added them later using
-      the ordinary tag machinery. State this explicitly so it's a
-      remembered exclusion, not a silent gap.
-- [ ] Spike-attempt the Phase 2 escaping proof on a throwaway basis now
-      (see 1.7) to de-risk the Mathlib-or-not call before locking in the
-      phase order below.
+      `Html/Tags.lean`, re-exported from `Html.lean`) — the v1 tag list
+      above (~40 elements) already exceeds "comfortable in one file", so
+      there's no single-file period worth having.
+- [x] Add `[[lean_lib]] name = "Html"` to `lakefile.toml`. Done.
+- [x] Decide `Node`'s internal representation (see 1.1). **Empirically
+      spiked (compiled, not just reasoned about — see throwaway benchmark,
+      not committed) before deciding, because the a priori reasoning
+      turned out to be wrong:**
+      - A flat, wide fan-out rendered via plain eager `String.join` (e.g. a
+        160,000-row table, 13MB output) was fast — no quadratic blowup.
+        Lean 4's runtime does optimize `acc ++ new` via in-place buffer
+        growth when `acc` is uniquely owned, exactly as 1.1 hoped might be
+        checked.
+      - But naive **per-node** eager concatenation
+        (`"<div>" ++ children ++ "</div>"`) *is* quadratic for **deep
+        nesting**: a chain of 200,000 single-child wrapper `<div>`s took
+        5.4s and scaled as O(depth²) (confirmed: 4× depth → ~15× time).
+        Root cause: prepending the small open-tag onto already-large child
+        content requires a full copy every level — Lean's in-place-append
+        optimization only helps when new content is appended on the
+        *right* of a uniquely-owned buffer, not when something is
+        prepended on the *left*.
+      - A "safe-looking" Hughes-list/difference-list builder
+        (`String → String`, composed as `cat a b := fun k => a (b k)`) is
+        **also quadratic**, for the identical reason: flattening a
+        right-associated composition is prepend-shaped. Confirmed: 40,000
+        rows took 11.8s and quadrupled with 2× input.
+      - **The fix that is empirically linear:** an accumulator-threading
+        builder where every primitive step *appends* onto one growing
+        buffer, left-to-right, and never prepends — i.e. `Node` wraps a
+        `String → String` function meaning "given what's built so far,
+        return it with my content appended"
+        (`cat a b := fun acc => b (a acc)`, `leaf s := fun acc => acc ++
+        s`), with `render n := n.repr ""`. Confirmed linear up to a
+        3.2M-deep chain (35MB, 0.69s) and a 320,000-row table (27MB,
+        0.145s) — both cases that broke the other two representations at
+        two orders of magnitude smaller scale.
+      - **Takeaway for Phase 1:** direction of concatenation (append vs.
+        prepend) matters far more on this runtime than "eager vs.
+        deferred" as originally framed in 1.1. Implement `Node`'s smart
+        constructors directly in this append-only accumulator style; do
+        not write `open ++ children ++ close` anywhere.
+- [x] Confirm `<script>`/`<style>` are out of v1 scope. **Confirmed, for
+      the stated reason**: they are raw-text elements needing JS/CSS
+      escaping, not HTML entity escaping; Phase 2's generic child-escaping
+      would silently mis-escape their content. Documented here as a
+      remembered exclusion, to be enforced again in Phase 4/5 module docs.
+- [x] Spike-attempt the Phase 2 escaping proof on a throwaway basis (see
+      1.7), to de-risk the Mathlib-or-not call. **Done — full success,
+      zero Mathlib, zero `sorry`.** Proved, in core Lean only: `escape`
+      (implemented as `String.join (s.toList.map escapeChar)`, a
+      structural fold over `List Char` per 1.7's recommendation) never
+      produces a raw `<`, `>`, or `"` in its output, by induction over
+      `List Char`/`List String`. **Decision: v1 stays at zero Lake
+      dependencies; do not add Mathlib.** Real friction hit along the way,
+      worth keeping as a template so Phase 2 doesn't rediscover it from
+      scratch:
+      - The safety predicate must be `Bool`-valued
+        (`c == '<' || c == '>' || c == '"'`), not `Prop`-valued
+        (`c = '<' ∨ ...`) — core Lean does not auto-synthesize
+        `Decidable (∀ c ∈ l, P c)` for a `∨`/`=`-shaped `Prop`, and
+        `decide` needs the predicate computable from the start.
+      - `split` behaves differently on the goal vs. on an already-`intro`'d
+        hypothesis derived from a `match` — splitting a hypothesis hit an
+        opaque "Expected type must not contain free variables" error;
+        splitting the goal before introducing bound variables avoided it.
+      - `String.join`'s definition (`List.foldl (·++·) ""`) doesn't induct
+        directly — needed a helper lemma with the accumulator
+        **universally quantified** (`∀ acc, (l.foldl (·++·) acc).toList =
+        acc.toList ++ (l.map toList).flatten`), proved by induction on the
+        list.
+      - Only `String.toList_singleton` is `@[simp]`; `String.toList_empty`
+        and `String.toList_append` exist in core but are not simp-tagged —
+        cite them explicitly.
+      - Unpacking membership in a twice-mapped, then-flattened list
+        (`c ∈ ((l.map f).map g).flatten`) via `List.mem_flatten`/
+        `List.mem_map` needs one destructuring layer per `map` — easy to
+        under-destructure and get a type mismatch (hit this once: got a
+        `String` where a `Char` was expected).
 
 ### Phase 1 — Core node & content model
 - [ ] `Category` inductive, `Node (cat : Category)` with private

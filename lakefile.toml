@@ -2,6 +2,9 @@ name = "webapp"
 version = "0.1.0"
 defaultTargets = ["webapp"]
 
+[[lean_lib]]
+name = "Html"
+
 [[lean_exe]]
 name = "webapp"
 root = "Main"
