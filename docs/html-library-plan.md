@@ -302,17 +302,29 @@ as another `Category`.
         `String` where a `Char` was expected).
 
 ### Phase 1 — Core node & content model
-- [ ] `Category` inductive, `Node (cat : Category)` with private
+- [x] `Category` inductive, `Node (cat : Category)` with private
       constructor per the representation decided in Phase 0, `Coe (Node
-      .phrasing) (Node .flow)`.
-- [ ] Void-element constructor shape (distinct from the children-taking
-      shape) — e.g. a `voidTag` helper used by `img`/`br`/`input`/etc.,
-      rendering `<tag ...>` with no children and no closing tag.
-- [ ] `#guard` tests: minimal render output for at least one tag of each
-      shape (normal, void). No attributes yet — `HtmlAttrs` doesn't exist
-      until Phase 3 and values aren't escaped until Phase 2, so an
-      "attributed" test here would either be untested raw substitution or
-      premature; defer attribute-bearing render tests to Phase 3.
+      .phrasing) (Node .flow)`. Implemented in `Html/Node.lean`, exported
+      via `Html.lean` per Phase 0's module-tree layout decision. `Node`
+      wraps the append-only `String → String` accumulator from the Phase 0
+      spike (`leaf`/`andThen`/`concatAll`, all private); `render` is the
+      only place a `Node` becomes a `String`.
+- [x] Void-element constructor shape (distinct from the children-taking
+      shape) — implemented as `Node.element` (open tag, children, close
+      tag) and `Node.voidElement` (open tag only, self-closing, no
+      children param) — both generic helpers, not yet wired to real named
+      tags (`div`, `br`, ...); that's Phase 4, once category constraints
+      per element are worked out.
+- [x] `#guard` tests: minimal render output for a normal element (nested
+      and sibling cases), a void element, and one case exercising the
+      `Coe (Node .phrasing) (Node .flow)` instance — see bottom of
+      `Html/Node.lean`. No attributes yet, as planned; deferred to Phase
+      3. Verified the guards actually catch a regression (deliberately
+      broke one, confirmed `lake build` fails, restored). Also added
+      `"Html"` to `lakefile.toml`'s `defaultTargets` — it was missing from
+      Phase 0's setup, so these guards were silently skipped by a plain
+      `lake build` until now (only `webapp`'s target was default; caught
+      by checking job counts, not by assumption).
 
 ### Phase 2 — Escaping & attribute rendering
 - [ ] `escape` for text content and attribute values (single, carefully

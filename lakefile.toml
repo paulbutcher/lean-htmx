@@ -1,6 +1,6 @@
 name = "webapp"
 version = "0.1.0"
-defaultTargets = ["webapp"]
+defaultTargets = ["webapp", "Html"]
 
 [[lean_lib]]
 name = "Html"
