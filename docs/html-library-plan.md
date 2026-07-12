@@ -35,6 +35,21 @@ with overlaps, plus the "transparent content model" exception (`<a>`,
 fixed category of their own). Full fidelity to the spec is a lot of work;
 v1 scope needs a deliberate, explicit decision (see Plan, Phase 0).
 
+**Representation risk, not yet resolved:** "private-constructor wrapper
+around a rendered `String`" is ambiguous about *when* rendering happens. If
+each smart constructor eagerly concatenates its children's already-rendered
+strings, nesting depth becomes a classic quadratic string-concatenation
+trap (each level re-copies everything below it) — invisible in small
+`#guard` examples, real at realistic page sizes (tables, forms, repeated
+list items). This needs an explicit decision before Phase 1, not an
+accident of implementation order: either confirm eager `String` concat is
+fine for v1's expected page sizes, or have `Node` wrap something that defers
+flattening (a `String.Builder`/rope, or a small tree of `Array String`
+chunks) with a single `render : Node cat → String` at the boundary. The
+latter also gets pretty-printing (Phase 6) close to free, since a
+structured intermediate can be flattened compactly or indented. See Plan,
+Phase 0/1.
+
 ### 1.2 Attributes: one concrete type, not a type parameter — this is the load-bearing decision
 
 We tried making `Node` generic over the *attribute vocabulary* too
@@ -177,6 +192,15 @@ as another `Category`.
   (few reusable lemmas, harder to reason about compositionally). Whether to
   add Mathlib purely to get better string lemmas is an open call to make
   when that proof is actually attempted — don't decide it speculatively.
+  Given this is the single highest-uncertainty item in the plan, do a
+  throwaway spike of the proof early (Phase 0/1, before committing to the
+  phase order below) rather than discovering mid-Phase-2 that core Lean is
+  too thin — finding that out late means retrofitting a dependency after
+  other phases have already assumed zero deps.
+- `#guard_msgs` (core Lean) asserts on expected elaboration
+  errors/messages — likely sufficient for Phase 4's "should fail to
+  typecheck" regression cases without inventing a separate negative-compile
+  CI mechanism. Check this before treating that as an open question.
 
 ## 2. Implementation plan (v1: html only, no htmx)
 
@@ -197,15 +221,32 @@ as another `Category`.
       `Html/Tags.lean`, re-exported from `Html.lean`). Recommend splitting
       once the tag count grows past what's comfortable in one file.
 - [ ] Add `[[lean_lib]] name = "Html"` to `lakefile.toml`.
+- [ ] Decide `Node`'s internal representation: eager `String` concat at
+      each smart constructor vs. a deferred builder/tree flattened once at
+      `render` (see 1.1). Don't let this default silently — it's expensive
+      to change after Phase 4 has tag functions written against it.
+- [ ] Confirm `<script>`/`<style>` are out of v1 scope, and *why*: they're
+      raw-text elements with JS/CSS escaping rules, not HTML entity
+      escaping — the generic child-escaping logic Phase 2 builds would
+      silently mis-escape their content if someone added them later using
+      the ordinary tag machinery. State this explicitly so it's a
+      remembered exclusion, not a silent gap.
+- [ ] Spike-attempt the Phase 2 escaping proof on a throwaway basis now
+      (see 1.7) to de-risk the Mathlib-or-not call before locking in the
+      phase order below.
 
 ### Phase 1 — Core node & content model
 - [ ] `Category` inductive, `Node (cat : Category)` with private
-      constructor, `Coe (Node .phrasing) (Node .flow)`.
+      constructor per the representation decided in Phase 0, `Coe (Node
+      .phrasing) (Node .flow)`.
 - [ ] Void-element constructor shape (distinct from the children-taking
       shape) — e.g. a `voidTag` helper used by `img`/`br`/`input`/etc.,
       rendering `<tag ...>` with no children and no closing tag.
-- [ ] `#guard` tests: minimal and attributed render output for at least one
-      tag of each shape (normal, void).
+- [ ] `#guard` tests: minimal render output for at least one tag of each
+      shape (normal, void). No attributes yet — `HtmlAttrs` doesn't exist
+      until Phase 3 and values aren't escaped until Phase 2, so an
+      "attributed" test here would either be untested raw substitution or
+      premature; defer attribute-bearing render tests to Phase 3.
 
 ### Phase 2 — Escaping & attribute rendering
 - [ ] `escape` for text content and attribute values (single, carefully
@@ -216,6 +257,21 @@ as another `Category`.
       `>`, or `"`. This is the actual XSS-relevant safety property and the
       main piece of formal verification worth doing for v1. Decide
       representation (see 1.7) as part of this task.
+- [ ] **State as an explicit precondition of the above proof, and enforce
+      it in the renderer**: attribute values are *always* rendered
+      double-quote-delimited — the renderer never emits unquoted or
+      single-quoted attribute syntax. HTML5 permits unquoted attribute
+      values; if the renderer ever emitted one, escaping only `<`/`>`/`"`
+      stops being sufficient (a bare space or `>` breaks out of an unquoted
+      value) and the proof's guarantee silently stops applying to that
+      codepath. Pin this down now so it isn't rediscovered by surprise if
+      someone adds unquoted rendering later.
+- [ ] **Proof or explicit argument**: composing already-escaped fragments
+      (`escape a ++ escape b`) behaves the same as escaping the
+      concatenation in context — i.e. no double-escaping and no
+      under-escaping at fragment boundaries. This is the formal version of
+      the "`&` must go first" ordering note above; worth a lemma rather
+      than leaving the ordering constraint as a comment.
 - [ ] `#guard` tests per metacharacter and combinations (`<script>`,
       `"onclick="`, literal `&`, empty string, non-ASCII).
 
@@ -225,7 +281,23 @@ as another `Category`.
 - [ ] Per-element typed attribute records where the element has
       required/typed attributes of its own (`AAttrs` for `<a>`, similarly
       for `<img>`, `<input>`, etc., per Phase 0 scope).
-- [ ] `rawAttrs : List (String × String) := []` on every tag.
+- [ ] Decide how boolean attributes (`disabled`, `checked`, `required`,
+      `readonly`) render — bare attribute name when present, absent
+      entirely when not, never `name="false"`. Not a corollary of anything
+      else in the plan; needs its own explicit decision and `#guard` test.
+- [ ] Decide whether URL-valued attributes (`href`, `src`) get a dedicated
+      type, or stay plain `String`. Generic escaping (Phase 2) defends
+      against markup breakout but not against a `javascript:`-scheme value
+      — a distinct, well-known injection vector. If staying `String` for
+      v1, document this as an explicit non-goal alongside the
+      `rawAttrs`/`unsafeRaw` caveats, not a silent gap.
+- [ ] `rawAttrs : List (String × String) := []` on every tag. Decide
+      whether the *name* half gets any validation: the plan so far only
+      escapes the *value*; an attribute name containing a space, `=`, or
+      `>` breaks out of the tag regardless of value-escaping. If names are
+      always literal source-code identifiers in practice, document that
+      assumption explicitly next to the "value-escaped, name unchecked"
+      description in 1.3 rather than leaving the asymmetry unstated.
 - [ ] `#guard` tests per attribute; one test documenting (not fixing) that
       `rawAttrs` is intentionally unchecked.
 
@@ -235,10 +307,16 @@ as another `Category`.
 - [ ] `unsafeRaw : String → Node cat`.
 - [ ] `#guard` smoke test per tag. Keep the prototype's "should fail to
       typecheck" comments as living regression documentation (e.g. `p`
-      rejecting a nested `div`); consider whether the team wants these
-      enforced by an actual negative-compile CI step rather than comments.
+      rejecting a nested `div`); check whether core Lean's `#guard_msgs`
+      (see 1.7) can enforce these as real negative-compile regression tests
+      rather than comments before reaching for separate CI tooling.
 
 ### Phase 5 — Integration & docs
+- [ ] `Html.document` (or similar): assembles `<!DOCTYPE html>` plus the
+      `<html>`/`<head>`/`<body>` skeleton into one entry point. Nothing
+      earlier in the plan produces a full page — Phases 1–4 only build
+      tags and the `render : Node cat → String` primitive: this is the
+      missing top-level piece that turns a `Node` into a servable document.
 - [ ] Wire a rendered page into `Main.lean`'s `Std.Http.Server` handler
       (currently `Response.ok |>.text "Hey there ;-)"`) as an end-to-end
       smoke test that the library serves real output.
@@ -261,8 +339,19 @@ as another `Category`.
   example (tag shapes, attributes, escaping cases). Zero dependencies,
   enforced on every `lake build`.
 - Reserve actual `theorem ... := by ...` proofs for universal properties
-  not already implied by typing — chiefly Phase 2's escaping-safety lemma.
-- Content-model correctness needs no separate proof (implied by type
-  soundness of a well-typed `Node`-building program).
+  not already implied by typing — chiefly Phase 2's escaping-safety lemma
+  and its compositionality corollary (fragment concatenation doesn't
+  double- or under-escape at the seam).
+- The escaping-safety proof rests on an explicit renderer invariant:
+  attribute values are always double-quote-delimited, never unquoted or
+  single-quoted. State it, don't let it be an implicit assumption.
+- Content-model correctness and tag-balance (every open tag's matching
+  close is emitted by the same smart-constructor call) need no separate
+  proof — both are implied by type soundness / construction of a
+  well-typed `Node`-building program, by the same argument as 1.1.
 - Anything passed through `rawAttrs`/`unsafeRaw` is explicitly out of scope
   for any proof — document this boundary, don't let it get blurred later.
+  This includes `rawAttrs`' attribute *names* specifically (only values are
+  escaped) and URL-valued attributes (`href`/`src`) if they stay untyped
+  `String` — generic escaping doesn't defend against a `javascript:`-scheme
+  value.
