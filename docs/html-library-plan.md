@@ -449,16 +449,36 @@ as another `Category`.
       separate negative-compile CI mechanism needed.
 
 ### Phase 5 — Integration & docs
-- [ ] `Html.document` (or similar): assembles `<!DOCTYPE html>` plus the
-      `<html>`/`<head>`/`<body>` skeleton into one entry point. Nothing
-      earlier in the plan produces a full page — Phases 1–4 only build
-      tags and the `render : Node cat → String` primitive: this is the
-      missing top-level piece that turns a `Node` into a servable document.
-- [ ] Wire a rendered page into `Main.lean`'s `Std.Http.Server` handler
-      (currently `Response.ok |>.text "Hey there ;-)"`) as an end-to-end
-      smoke test that the library serves real output.
-- [ ] Module docs: design overview, the two escape hatches and their
-      safety caveats, how to add a new tag/attribute.
+- [x] `Html.document`: assembles `<!DOCTYPE html>` plus the
+      `<html>`/`<head>`/`<body>` skeleton, in a new `Html/Document.lean`
+      (a natural addition to Phase 0's module tree, not anticipated by
+      name there but following its "split when it grows" principle).
+      Built entirely from `Node`'s existing *public* API
+      (`element`/`voidElement`/`textElement`) rather than hand-rolled
+      string concatenation — `head`/`html`/`body`/`meta`/`title`/`link`
+      don't need `Node`'s private constructor, and reusing `Node.element`
+      for `body` specifically avoids reintroducing the Phase 0 quadratic-
+      prepend trap for what could be large page content (the single
+      top-level `"<!DOCTYPE html>" ++ render htmlNode` prepend is a
+      one-time, non-repeated cost, unlike the nested-per-level case that
+      was actually quadratic). Always emits `<meta charset="utf-8">`;
+      takes optional extra `metaTags`, `stylesheets`, and `lang`.
+      `#guard`-tested, including that the title is escaped.
+- [x] Wired into `Main.lean`'s `Std.Http.Server` handler: builds a real
+      page (`h1`/`p`/`strong`/`Node.text`) via `Html.document`, served via
+      `Response.ok |>.html page` (found `Response.Builder.html` in
+      `Std.Http.Data.Body.Full` — sets `Content-Type: text/html;
+      charset=utf-8` automatically, better than the generic `.text`).
+      Verified end-to-end for real, not just by building: ran the server,
+      `curl`'d it, confirmed `Content-Type: text/html; charset=utf-8` and
+      correctly-nested, correctly-escaped HTML in the response body.
+- [x] Module docs — added to `Html.lean` (the natural entry point):
+      design overview (one phantom `Category` parameter, why attributes
+      aren't a second one, content-model-correctness as a corollary of
+      type soundness), the two escape hatches (`rawAttrs`, `unsafeRaw`)
+      with their safety caveats, and step-by-step "how to add a new
+      tag"/"how to add a new attribute" sections referencing the concrete
+      patterns established in Phases 3–4.
 
 ### Phase 6 — Deferred (explicitly out of scope this phase)
 - [ ] `Htmx` library — design already validated (1.4): typed wrapper tags
