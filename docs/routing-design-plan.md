@@ -143,6 +143,20 @@ happens in `MetaM`, producing the `List PathSeg` term directly, never
 asking the kernel to reduce through it) — more machinery, but a known-good
 escape hatch, not yet needed.
 
+**This hand-rolled parser is the one piece of new logic in this design
+that isn't just typing-driven dispatch, and it deserves a real proof, not
+just `#guard` examples** — same reasoning as the HTML library's escaping
+proof (`docs/html-library-plan.md` §Phase 2): a stdlib implementation was
+rejected and replaced by hand-written structural recursion specifically
+because the stdlib one didn't behave as expected, which is exactly the
+situation where "it looked right in a few examples" isn't good enough.
+Candidate statement: for well-formed pattern strings, the `List Char`
+splitter's output round-trips against a segment-join spec (e.g.
+`(parsePattern s).map segToString |>.intercalate "/" = s`), and separately,
+the parser never panics on malformed input (unknown capture-kind name,
+empty capture name, doubled `/`) — it either produces a sensible `PathSeg`
+or fails via `Option`/explicit error, never an unhandled exception. See §6.
+
 ## 4. Secondary pitfall: typeclass search is stricter than plain defeq
 
 `BEq`/`Decidable` instance search on a `HandlerType`-computed type (e.g.
@@ -184,11 +198,20 @@ written literally).
 
 ## 6. Test strategy note
 
-Same default as the HTML library: `#guard` for behavior, one theorem only
-where a universal property isn't already implied by typing. The one thing
-worth a real regression test once this is built for real (not just the
-spike): a small suite of "should fail to typecheck" cases per §2's
-`badArity` example, the same way `docs/html-library-plan.md` Phase 4 wants
-for content-model violations — these are cheap correctness insurance for
-exactly the property that's the whole point of doing this in Lean instead
-of Compojure directly.
+Same default as the HTML library: `#guard` for behavior, real `theorem`s
+reserved for universal properties not already implied by typing. Two
+things clear that bar:
+
+- A small suite of "should fail to typecheck" cases per §2's `badArity`
+  example, the same way `docs/html-library-plan.md` Phase 4 wants for
+  content-model violations — these are cheap correctness insurance for
+  exactly the property that's the whole point of doing this in Lean
+  instead of Compojure directly.
+- **Parser correctness for the `List Char` splitter (§3).** Dispatch and
+  capture typing are already guaranteed by `HandlerType`/the equation
+  compiler (§2) — no proof needed there, typing gives it for free. The
+  parser is the exception: it's hand-written specifically because the
+  stdlib path (`String.splitOn`) failed (§3), so its correctness is not
+  implied by anything else in this design and needs its own proof once
+  built for real — the round-trip and no-panic-on-malformed-input
+  statements sketched in §3.
