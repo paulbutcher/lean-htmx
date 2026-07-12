@@ -7,8 +7,8 @@ open Html
 
 def page : String :=
   document "Hey there ;-)"
-    [ h1 [Node.text "Hey there ;-)"],
-      p [Node.text "Served by a ", strong [Node.text "typed"], Node.text " HTML library." ] ]
+    [ h1 ["Hey there ;-)"],
+      p ["Served by a ", strong ["typed"], " HTML library." ] ]
     (lang := some "en")
 
 def main : IO Unit := Async.block do

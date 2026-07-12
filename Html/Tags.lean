@@ -244,9 +244,9 @@ def td (children : List (Node .flow)) (attrs : HtmlAttrs := {})
 
 -- Composition smoke tests: nesting, phrasing coercion into flow, text
 -- leaves, attributes, rawAttrs, and unsafeRaw all working together.
-#guard Node.render (div [p [Node.text "Hello, "], strong [Node.text "world"]])
+#guard Node.render (div [p ["Hello, "], strong ["world"]])
   = "<div><p>Hello, </p><strong>world</strong></div>"
-#guard Node.render (p [Node.text "a < b & c"]) = "<p>a &lt; b &amp; c</p>"
+#guard Node.render (p ["a < b & c"]) = "<p>a &lt; b &amp; c</p>"
 #guard Node.render (div [] { id := some "x", class_ := some "y" })
   = "<div id=\"x\" class=\"y\"></div>"
 #guard Node.render (div [] {} [("data-x", "1")]) = "<div data-x=\"1\"></div>"

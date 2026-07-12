@@ -82,6 +82,12 @@ def textElement (cat : Category) (tag : String) (content : String)
 both flow and phrasing content). -/
 def text (s : String) : Node cat := ⟨leaf (escape s)⟩
 
+/-- String literals can stand directly for a `text` leaf wherever a `Node`
+is expected (e.g. among a tag's children), so callers write `"hi"` instead
+of `Node.text "hi"`. -/
+instance : Coe String (Node cat) where
+  coe := text
+
 /-- Verbatim, unescaped markup, trusted as-is, usable as content of any
 category. Named loudly, not `raw` -- misuse with untrusted input is a real
 XSS hole; see `docs/html-library-plan.md` 1.3. Explicitly out of scope for
@@ -104,5 +110,8 @@ instance : Coe (Node .phrasing) (Node .flow) where
     (Node.element .flow "ul" [Node.element .flow "li" [], Node.element .flow "li" []])
   = "<ul><li></li><li></li></ul>"
 #guard Node.render ((Node.element .phrasing "span" [] : Node .phrasing) : Node .flow) = "<span></span>"
+
+-- String literals coerce directly to a `text` leaf (no `Node.text` needed).
+#guard Node.render (Node.element .flow "p" [("hi" : Node .flow)]) = "<p>hi</p>"
 
 end Html
