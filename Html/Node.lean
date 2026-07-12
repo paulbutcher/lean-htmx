@@ -1,3 +1,5 @@
+import Html.Escape
+
 /-!
 Core node representation and content-model machinery for the typed HTML
 library. See `docs/html-library-plan.md` for the design rationale.
@@ -15,9 +17,10 @@ inductive Category where
 
 /-- A well-typed piece of rendered HTML, indexed by the content-model
 category it's valid in. The constructor is private: the only way to build
-a `Node` is through `element`/`voidElement` (and, later, the tag functions
-built on them), which is what makes content-model correctness a corollary
-of type soundness rather than something checked separately. -/
+a `Node` is through `element`/`elementOf`/`voidElement`/`textElement`/
+`text`/`unsafeRaw` (and, on top of those, the tag functions in
+`Html/Tags.lean`), which is what makes content-model correctness a
+corollary of type soundness rather than something checked separately. -/
 structure Node (cat : Category) where
   private mk ::
   private build : String → String
@@ -43,14 +46,47 @@ private def concatAll (bs : List (String → String)) : String → String :=
 content is ever turned into a `String`. -/
 def render (n : Node cat) : String := n.build ""
 
-/-- A normal element: open tag, children (in order), close tag. -/
-def element (cat : Category) (tag : String) (children : List (Node cat)) : Node cat :=
-  ⟨andThen (andThen (leaf s!"<{tag}>") (concatAll (children.map (·.build)))) (leaf s!"</{tag}>")⟩
+/-- A normal element whose children may be a *different*, narrower
+category than the element itself -- e.g. `p` is flow content but only
+accepts phrasing children (HTML5 disallows a `<div>` directly inside a
+`<p>`), which this makes a type error rather than a spec violation caught
+only at runtime. `attrsStr` is the pre-rendered, already-escaped attribute
+string (e.g. from `HtmlAttrs.render` + `renderRawAttrs`, built by the tag
+functions in `Html/Tags.lean`), spliced directly after the tag name. -/
+def elementOf (cat contentCat : Category) (tag : String)
+    (children : List (Node contentCat)) (attrsStr : String := "") : Node cat :=
+  ⟨andThen (andThen (leaf s!"<{tag}{attrsStr}>") (concatAll (children.map (·.build)))) (leaf s!"</{tag}>")⟩
+
+/-- A normal element whose children are the *same* category as the
+element itself (e.g. `div`: a flow element containing flow content). The
+common case of `elementOf`. -/
+def element (cat : Category) (tag : String) (children : List (Node cat))
+    (attrsStr : String := "") : Node cat :=
+  elementOf cat cat tag children attrsStr
 
 /-- A void element: self-closing, takes no children, has no closing tag
 (`<br>`, `<img>`, `<input>`, ...). -/
-def voidElement (cat : Category) (tag : String) : Node cat :=
-  ⟨leaf s!"<{tag}>"⟩
+def voidElement (cat : Category) (tag : String) (attrsStr : String := "") : Node cat :=
+  ⟨leaf s!"<{tag}{attrsStr}>"⟩
+
+/-- An element whose content model is plain text, not nested elements
+(`<textarea>`, `<option>` -- these are RCDATA-like in HTML5: entities are
+still escaped normally, but `<`/`>` in the content are never parsed as
+nested markup, so typing their content as `List (Node cat)` would be
+misleading). -/
+def textElement (cat : Category) (tag : String) (content : String)
+    (attrsStr : String := "") : Node cat :=
+  ⟨andThen (andThen (leaf s!"<{tag}{attrsStr}>") (leaf (escape content))) (leaf s!"</{tag}>")⟩
+
+/-- A leaf of escaped text content, valid in any category (plain text is
+both flow and phrasing content). -/
+def text (s : String) : Node cat := ⟨leaf (escape s)⟩
+
+/-- Verbatim, unescaped markup, trusted as-is, usable as content of any
+category. Named loudly, not `raw` -- misuse with untrusted input is a real
+XSS hole; see `docs/html-library-plan.md` 1.3. Explicitly out of scope for
+any correctness proof in this library. -/
+def unsafeRaw (s : String) : Node cat := ⟨leaf s⟩
 
 end Node
 

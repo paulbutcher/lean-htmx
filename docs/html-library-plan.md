@@ -408,14 +408,45 @@ as another `Category`.
       confirmed `lake build` fails, restored).
 
 ### Phase 4 — Tags
-- [ ] Implement each tag from the Phase 0 list with correct
-      `Category`/children constraints.
-- [ ] `unsafeRaw : String → Node cat`.
-- [ ] `#guard` smoke test per tag. Keep the prototype's "should fail to
-      typecheck" comments as living regression documentation (e.g. `p`
-      rejecting a nested `div`); check whether core Lean's `#guard_msgs`
-      (see 1.7) can enforce these as real negative-compile regression tests
-      rather than comments before reaching for separate CI tooling.
+- [x] Implement each tag from the Phase 0 list with correct
+      `Category`/children constraints, in `Html/Tags.lean` (39 tags).
+      Required extending `Html/Node.lean`'s primitives first: `element`
+      assumed the element's own category equals its children's category,
+      which is wrong for `p`/`h1`–`h6`/`pre` (flow elements that only
+      accept phrasing children — a `<div>` inside a `<p>` must be a type
+      error). Added `elementOf (cat contentCat : Category) ...` for the
+      cross-category case (`element` is now defined in terms of it, for
+      the common same-category case); added `textElement` for `<textarea>`
+      /`<option>` (RCDATA-like: entities escaped normally, but content is
+      plain text, not nested elements — typing it as `List (Node cat)`
+      would have been misleading); added `text : String → Node cat` (an
+      escaped-text leaf, needed for any real content — e.g.
+      `p [text "hi"]` — and not explicitly called out earlier in the plan,
+      but required for the library to be usable); added `attrsStr`
+      parameters throughout, threaded from Phase 3's `HtmlAttrs.render`/
+      `renderRawAttrs`. `html`/`head`/`body`/`meta`/`link` deliberately
+      **not** defined here — per Phase 0's category-lattice decision they
+      belong to Phase 5's `Html.document` skeleton, not general tags.
+      Element-specific attributes beyond `AAttrs`/`ImgAttrs`/`InputAttrs`
+      (Phase 3) — `form`'s `action`, `button`'s `disabled`, `select`'s
+      `multiple`, etc. — are not modeled as typed fields (documented in
+      `Html/Tags.lean`'s module doc; use `rawAttrs`). Container elements
+      with a stricter real content model than flow/phrasing (`ul`/`ol`
+      only `<li>`, `table`/`tr` only specific children, `select` only
+      `<option>`) accept general flow/phrasing children — the same
+      documented Phase 0 simplification as everywhere else, not a new gap.
+- [x] `unsafeRaw : String → Node cat` — added to `Html/Node.lean` (needs
+      the private constructor, so can't live in `Tags.lean`).
+- [x] `#guard` smoke test per tag (39 tags), plus composition tests
+      (nesting, phrasing-into-flow coercion, `text`, `unsafeRaw`, `attrs`,
+      `rawAttrs` all working together). **`#guard_msgs` confirmed to work**
+      for "should fail to typecheck" regression documentation — added one
+      for `p` rejecting a nested `div` (the plan's own example), checked
+      it fails correctly both on message-text drift and on an actual
+      type-safety regression (temporarily made `p` accept flow children;
+      confirmed `#guard_msgs` caught it because the example stopped
+      erroring at all — not just a text mismatch — then restored). No
+      separate negative-compile CI mechanism needed.
 
 ### Phase 5 — Integration & docs
 - [ ] `Html.document` (or similar): assembles `<!DOCTYPE html>` plus the
