@@ -274,4 +274,16 @@ in the application
 #guard_msgs in
 example : Node .flow := p [div []]
 
+-- Pretty-printing (Phase 6), end-to-end through real tags: block-vs-inline
+-- layout composes correctly, and whitespace-significant content
+-- (`pre`/`textarea`) is never touched regardless of surrounding layout.
+#guard Node.renderPretty (div [p ["Hello, "], strong ["world"]])
+  = "<div>\n  <p>Hello, </p>\n  <strong>world</strong>\n</div>"
+#guard Node.renderPretty (ul [li [Node.text "one"], li [Node.text "two"]])
+  = "<ul>\n  <li>one</li>\n  <li>two</li>\n</ul>"
+#guard Node.renderPretty (div [(pre [Node.text "line1\n  line2"] : Node .flow)])
+  = "<div>\n  <pre>line1\n  line2</pre>\n</div>"
+#guard Node.renderPretty (div [(textarea "line1\nline2  spaced" : Node .flow)])
+  = "<div>\n  <textarea>line1\nline2  spaced</textarea>\n</div>"
+
 end Html

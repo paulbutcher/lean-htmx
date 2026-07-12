@@ -484,7 +484,64 @@ as another `Category`.
 - [ ] `Htmx` library — design already validated (1.4): typed wrapper tags
       over `rawAttrs`, zero changes needed to `Html`.
 - [ ] Broader `Category` lattice / transparent content model fidelity.
-- [ ] Pretty-printed (indented) output mode.
+- [x] **Pretty-printed (indented) output mode.** Implemented:
+      `Node.renderPretty`, plus `Html.document` gained `pretty := false` and
+      `unit := "  "` parameters rather than a separate `documentPretty`
+      function (kept it one entry point instead of two near-duplicate ones
+      -- `document`'s existing default arguments made this a natural fit).
+      `render`/`document`'s compact output is unchanged (`pretty`'s default
+      is `false`). Required
+      a real representation change, not a cosmetic addition: `Node` was
+      *only* an append-only `String → String` accumulator (1.1/Phase 0),
+      which renders fast but throws away tree shape the moment a node is
+      built — nothing left to know where a newline or indent level should
+      go. Replaced it with a private tree (`Repr`: `leaf`/`void`/`rawText`/
+      `elem`), and rewrote both `render` and `renderPretty` as direct
+      recursive walks over that tree using the *same* append-only
+      accumulator-threading discipline the Phase 0 spike found to be
+      linear (always `acc ++ smallPiece`, never prepend) — confirmed this
+      doesn't reintroduce the quadratic trap by re-running Phase 0-style
+      throwaway benchmarks (not committed): compact rendering of a
+      2,000,000-deep chain and a 2,000,000-row flat table both still
+      complete in well under a millisecond, unchanged from before the
+      representation swap.
+      - **Layout decision, reusing machinery that already existed**:
+        `elementOf`'s existing `contentCat` argument (the category of an
+        element's *children*, already tracked separately from the
+        element's own category to make e.g. `<div>` illegal inside `<p>` a
+        type error) doubles as the pretty-printer's layout signal for
+        free. `contentCat = .flow` → block layout, each child on its own
+        indented line (matches HTML5 flow content generally being
+        block-level, where inserted whitespace between siblings is
+        invisible). `contentCat = .phrasing` → inline layout, rendered
+        identically to compact (no added whitespace at any depth) —
+        load-bearing, not cosmetic: whitespace between text/inline runs
+        *is* visible in rendered HTML (`<span>a</span><span>b</span>` vs.
+        with an inserted separator), so the pretty-printer must never
+        inject any there. This is also what keeps `pre`'s content
+        untouched (`pre`'s children are typed `phrasing`, so inline layout
+        applies automatically — no special-casing needed) and, separately,
+        `textarea`/`option` content is never touched regardless of layout
+        because `textElement` stores raw content as an opaque leaf
+        (`rawText`), never recursed into by the pretty-printer at all.
+      - **Secondary layout rule**: a `block`-layout element with zero
+        children, or with exactly one *leaf* (bare text/`unsafeRaw`)
+        child, stays on one line (`<li>one</li>`, not `<li>\n  one\n</li>`)
+        — anything else (multiple children, or a single non-leaf/void
+        child) gets one-child-per-line. `#guard`-tested both ways.
+      - **Known, accepted, non-bug limitation**: indented output for a
+        chain of `D` nested block elements is `O(D²)` *characters*, hence
+        `O(D²)` time — not a reintroduction of the Phase 0 prepend trap,
+        but the unavoidable minimum, since the output itself is `O(D²)`
+        (line `d` carries `O(d)` leading spaces, summed `1..D`). Confirmed
+        empirically: doubling depth from 6,000 to 12,000 quadrupled output
+        size (72M → 288M chars) as predicted; 40,000-deep pretty-printed
+        output OOM'd, which is expected output-size growth, not an
+        algorithmic bug — compact rendering of the same depth is unaffected
+        (still linear, still fast). Documented on `Node.renderPretty` and
+        `Html.document`'s `pretty` parameter as a debug/human-readability
+        tool, not a replacement for compact output on any size-sensitive
+        path.
 - [ ] XHTML target — considered and set aside (HTML5 semantics were judged
       more useful; XHTML5 shares HTML5's content model exactly so buys
       nothing, and XHTML 1.x's cleaner DTD-based grammar targets a

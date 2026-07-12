@@ -15,9 +15,9 @@ history; this is a short orientation for someone reading the code.
 ## Design overview
 
 `Node (cat : Category)` (`Html/Node.lean`) is a private-constructor
-wrapper around an append-only `String → String` accumulator, indexed by
-the HTML content-model category it's valid in. Only `flow` and `phrasing`
-are modeled (v1 scope decision, `docs/html-library-plan.md` Phase 0); a
+wrapper around a small internal tree (`Repr`), indexed by the HTML
+content-model category it's valid in. Only `flow` and `phrasing` are
+modeled (v1 scope decision, `docs/html-library-plan.md` Phase 0); a
 `Coe (Node .phrasing) (Node .flow)` instance lets phrasing content (`span`,
 `a`, `strong`, ...) appear directly among a flow element's children. Every
 tag function (`Html/Tags.lean`) is a smart constructor built from `Node`'s
@@ -25,6 +25,20 @@ public primitives (`element`, `elementOf`, `voidElement`, `textElement`,
 `text`), so a well-typed program that builds a `Node` already has correct
 tag nesting and balanced tags -- that's a corollary of type soundness, not
 something checked separately at render time.
+
+`render`/`document` produce compact output; `Node.renderPretty` and
+`document`'s `pretty := true` (with a configurable `unit` indent string)
+(Phase 6) produce indented output for debugging/reading, sharing the same
+tree and the same append-only accumulator-threading walk (never prepend --
+see `docs/html-library-plan.md` Phase 0/6) so compact rendering stays
+linear even at millions of nodes. Layout reuses `elementOf`'s existing
+`contentCat`: `flow` children lay out one per line, `phrasing` children
+stay inline with no added whitespace (load-bearing, not cosmetic --
+whitespace between text/inline runs is visible in rendered HTML), which is
+also why `pre` and `textarea`/`option` content is never touched by the
+pretty-printer. `renderPretty` is `O(D²)` for a `D`-deep chain of block
+elements -- an accepted, documented limitation (the *output* is `O(D²)`
+characters, not an algorithmic inefficiency); `render` is unaffected.
 
 `Node` has exactly **one** phantom type parameter (`Category`), not two.
 An earlier design also made the *attribute vocabulary* a type parameter,

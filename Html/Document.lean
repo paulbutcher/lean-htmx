@@ -26,10 +26,15 @@ the quadratic-prepend trap documented in Phase 0/1.
 Always emits `<meta charset="utf-8">` (a near-universal default); `meta`
 supplies additional `name`/`content` pairs (e.g. `viewport`,
 `description`), and `stylesheets` supplies `<link rel="stylesheet">`
-`href`s. -/
+`href`s.
+
+`pretty` selects indented (`Node.renderPretty`) vs. compact (`Node.render`)
+output -- Phase 6; `unit` is the string repeated per indentation level
+(default two spaces) and is ignored when `pretty` is `false`. Pretty output
+is for debugging/reading generated markup, not size-sensitive serving. -/
 def document (title : String) (body : List (Node .flow))
     (metaTags : List (String × String) := []) (stylesheets : List String := [])
-    (lang : Option String := none) : String :=
+    (lang : Option String := none) (pretty : Bool := false) (unit : String := "  ") : String :=
   let charsetNode : Node .flow := Node.voidElement .flow "meta" (renderAttr "charset" "utf-8")
   let metaNodes : List (Node .flow) :=
     metaTags.map (fun (name, content) =>
@@ -45,7 +50,8 @@ def document (title : String) (body : List (Node .flow))
     | some l => renderAttr "lang" l
     | none => ""
   let htmlNode : Node .flow := Node.element .flow "html" [headNode, bodyNode] htmlAttrsStr
-  "<!DOCTYPE html>" ++ Node.render htmlNode
+  if pretty then "<!DOCTYPE html>\n" ++ Node.renderPretty htmlNode unit
+  else "<!DOCTYPE html>" ++ Node.render htmlNode
 
 #guard document "T" [] = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>T</title></head><body></body></html>"
 #guard document "T" [] (lang := some "en")
@@ -59,5 +65,12 @@ def document (title : String) (body : List (Node .flow))
   = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>T</title>" ++
     "<link rel=\"stylesheet\" href=\"/style.css\"></head><body></body></html>"
 #guard document "<script>" [] = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>&lt;script&gt;</title></head><body></body></html>"
+
+#guard document "T" [] (pretty := true)
+  = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>T</title>\n  </head>\n  <body></body>\n</html>"
+#guard document "T" [p [Node.text "hi"]] (pretty := true)
+  = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>T</title>\n  </head>\n  <body>\n    <p>hi</p>\n  </body>\n</html>"
+#guard document "T" [] (pretty := true) (unit := "    ")
+  = "<!DOCTYPE html>\n<html>\n    <head>\n        <meta charset=\"utf-8\">\n        <title>T</title>\n    </head>\n    <body></body>\n</html>"
 
 end Html
