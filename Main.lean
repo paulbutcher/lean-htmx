@@ -14,26 +14,24 @@ def htmxScript : ScriptAttrs :=
     crossorigin := "anonymous" }
 
 def page : String :=
-  document
+  document (pretty := true) (lang := "en")
     [ head [ meta_ [("charset", "utf-8")], title "Hey there ;-)", script htmxScript ],
       body
         [ h1 ["Hey there ;-)"],
           p ["Served by a ", strong ["typed"], " HTML library." ],
           Htmx.button ["Ping"] { hxGet := "/ping", hxTarget := "#result", hxSwap := some .innerHTML },
           div [] { id := "result" } ] ]
-    (pretty := true) (lang := "en")
 
 def pingFragment : String :=
   Node.render (strong ["pong"])
 
 def helloPage (name : String) : String :=
-  document
+  document (pretty := true) (lang := "en")
     [ head [ meta_ [("charset", "utf-8")], title s!"Hello, {name}" ],
       body
         [ h1 [s!"Hello, {name}!"],
           p [ "This page came from a ", strong ["typed path capture"],
               s!": /hello/:name:String matched \"{name}\"." ] ] ]
-    (pretty := true) (lang := "en")
 
 def routes : List (Route Result) :=
   [ route .get "/" (Response.ok.html page : Result),
