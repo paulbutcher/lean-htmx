@@ -481,8 +481,39 @@ as another `Category`.
       patterns established in Phases 3–4.
 
 ### Phase 6 — Deferred (explicitly out of scope this phase)
-- [ ] `Htmx` library — design already validated (1.4): typed wrapper tags
-      over `rawAttrs`, zero changes needed to `Html`.
+- [x] `Htmx` library — design already validated (1.4): typed wrapper tags
+      over `rawAttrs`, zero changes needed to `Html`. **Implemented** as its
+      own `lean_lib` (`Htmx.lean`, `Htmx/Attrs.lean`, `Htmx/Tags.lean`,
+      added to `lakefile.toml`'s `defaultTargets`), depending on `Html` in
+      one direction only. `HtmxAttrs` (`Htmx/Attrs.lean`) is a fixed
+      structure of `Option _` fields for the common `hx-*` attributes
+      (`hxGet`/`hxPost`/.../`hxDelete`, `hxTrigger`, `hxTarget`, `hxSwapOob`,
+      `hxSelect`/`hxSelectOob`, `hxPushUrl`, `hxConfirm`, `hxIndicator`,
+      `hxVals`, `hxExt`, `hxParams`), plus a real closed `HxSwap` enum for
+      `hx-swap` (the concrete example 1.4 named — `hxSwap := some "banana"`
+      is now a compile error) and `hxBoost : Option Bool` (htmx only accepts
+      literal `true`/`false` there, unlike `hxPushUrl`, which can also be a
+      URL and so stays `String`). `HtmxAttrs.toPairs` flattens to
+      `List (String × String)` of *unescaped* values — escaping happens
+      once, at render time, in `Html.renderRawAttrs`, exactly like every
+      other `rawAttrs` caller; this library does not duplicate that logic.
+      `Htmx/Tags.lean` has one wrapper per `Html/Tags.lean` tag (div through
+      td), each with the *same* signature as the matching `Html.*` function
+      plus one extra `hx : HtmxAttrs := {}` parameter positioned right
+      before `attrs`, forwarding via `hx.toPairs ++ rawAttrs` — confirmed
+      `Html.lean` needed zero changes (no edits made to any `Html/*.lean`
+      file for this phase). `#guard` smoke tests per wrapper tag, plus
+      composition tests confirming an `Htmx.div` nests inside a plain
+      `Html.div` and vice versa with no coercion needed (an `Htmx.*` tag's
+      result is a plain `Html.Node`, per 1.4's accepted tradeoff: no
+      whole-page "this uses htmx" static guarantee). Verified end-to-end,
+      not just by building: wired `Htmx.button` (with `hxGet`/`hxTarget`/
+      `hxSwap`) into `Main.lean`'s page next to plain `Html` tags, ran the
+      server, `curl`'d it, confirmed `hx-get="/ping" hx-target="#result"
+      hx-swap="innerHTML"` rendered correctly in the response body. (A
+      working `/ping` route to actually handle the click is out of scope
+      here — routing itself is a separate, not-yet-built design; see
+      `docs/routing-design-plan.md`.)
 - [ ] Broader `Category` lattice / transparent content model fidelity.
 - [x] **Pretty-printed (indented) output mode.** Implemented:
       `Node.renderPretty`, plus `Html.document` gained `pretty := false` and
