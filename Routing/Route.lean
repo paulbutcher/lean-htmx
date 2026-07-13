@@ -31,6 +31,25 @@ def route (method : Method) (pattern : String) {result : Type}
     (handler : HandlerType (parsePattern! pattern) result) : Route result :=
   { method, segs := parsePattern! pattern, handler }
 
+/-- Per-method aliases for `route`, so a route table can write `.get`/`.post`/`.put`/`.delete`
+(resolved via Lean's generalized dot notation against the list's expected `Route result` element
+type) instead of `route .get`/`route .post`/etc. -/
+def Route.get (pattern : String) {result : Type}
+    (handler : HandlerType (parsePattern! pattern) result) : Route result :=
+  route .get pattern handler
+
+def Route.post (pattern : String) {result : Type}
+    (handler : HandlerType (parsePattern! pattern) result) : Route result :=
+  route .post pattern handler
+
+def Route.put (pattern : String) {result : Type}
+    (handler : HandlerType (parsePattern! pattern) result) : Route result :=
+  route .put pattern handler
+
+def Route.delete (pattern : String) {result : Type}
+    (handler : HandlerType (parsePattern! pattern) result) : Route result :=
+  route .delete pattern handler
+
 /-- Matches one route against an incoming method and decoded path,
 producing the handler's result applied to any extracted captures. `none`
 if the method doesn't match, or if `dispatch` rejects the path (literal
@@ -48,9 +67,9 @@ def dispatchTable (routes : List (Route result)) (method : Method) (path : List 
 
 -- #guard tests: first match wins, method mismatch, path mismatch all fall through.
 private def testRoutes : List (Route String) :=
-  [ route .get "/" "home",
-    route .get "/users/:id:Nat" (fun (id : Nat) => s!"user #{id}"),
-    route .post "/users/:id:Nat" (fun (id : Nat) => s!"created #{id}") ]
+  [ .get "/" "home",
+    .get "/users/:id:Nat" (fun (id : Nat) => s!"user #{id}"),
+    .post "/users/:id:Nat" (fun (id : Nat) => s!"created #{id}") ]
 
 #guard dispatchTable testRoutes .get [] = some "home"
 #guard dispatchTable testRoutes .get ["users", "7"] = some "user #7"
