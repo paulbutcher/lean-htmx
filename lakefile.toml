@@ -1,6 +1,6 @@
 name = "webapp"
 version = "0.1.0"
-defaultTargets = ["webapp", "Html", "Htmx", "Routing", "Todo"]
+defaultTargets = ["webapp", "Html", "Htmx", "Routing", "Forms", "Todo"]
 
 [[require]]
 name = "leansqlite"
@@ -15,6 +15,9 @@ name = "Htmx"
 
 [[lean_lib]]
 name = "Routing"
+
+[[lean_lib]]
+name = "Forms"
 
 [[lean_lib]]
 name = "Todo"

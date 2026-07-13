@@ -2,7 +2,6 @@ import Routing.Pattern
 import Routing.Handler
 import Routing.Route
 import Routing.Server
-import Routing.FormBody
 
 /-!
 # `Routing`: a typed HTTP path router

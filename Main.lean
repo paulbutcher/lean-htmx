@@ -2,38 +2,27 @@ import Std.Http.Server
 import SQLite
 import Html
 import Routing
+import Forms
 import Todo
 
 open Std Async
 open Std Http Server
 open Html
 open Routing
+open Forms
 
-def hxCurrentUrlHeader : Header.Name := { value := "hx-current-url" }
-
-/-- The filter a mutation response should render, recovered from `HX-Current-URL`; defaults to
-`.all` if the header is absent (a non-htmx request, e.g. a bare `curl`). -/
 def currentFilter (req : Request Body.Stream) : Todo.Filter :=
-  match req.line.headers.get? hxCurrentUrlHeader with
+  match req.line.headers.get? (.ofString! "hx-current-url") with
   | some v => Todo.filterFromPath v.value
   | none => .all
 
-/-- Full page response for one of the three filter routes. -/
 def pageResponse (db : SQLite) (filter : Todo.Filter) : ContextAsync (Response Body.Any) := do
   let items ← Todo.list db filter
   Response.ok.html (Todo.page filter items)
 
-/-- Shared response for every mutating route: re-renders `#todo-list-section` plus the
-out-of-band footer for whichever filter the client is currently looking at. -/
 def mutationResponse (db : SQLite) (filter : Todo.Filter) : ContextAsync (Response Body.Any) := do
   let items ← Todo.list db filter
   Response.ok.html (Todo.mutationFragment items filter)
-
-/-- Reads and decodes a `application/x-www-form-urlencoded` request body, returning the value of
-`name`, or `""` if the body has no such field. -/
-def formField (req : Request Body.Stream) (name : String) : Async String := do
-  let body ← req.body.readAll (α := String)
-  return ((parseFormBody body).lookup name).getD ""
 
 def homeHandler (db : SQLite) (_req : Request Body.Stream) : ContextAsync (Response Body.Any) :=
   pageResponse db .all

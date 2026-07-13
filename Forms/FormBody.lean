@@ -1,6 +1,8 @@
+import Std.Http.Server
+
 /-!
 Decoding an `application/x-www-form-urlencoded` request body (`title=Buy+milk`) into
-`(name, value)` pairs.
+`(name, value)` pairs, and reading that body straight off an incoming request.
 
 Hand-rolled structural recursion over `List Char`, deliberately not `String.splitOn` -- the same
 choice `Routing/Pattern.lean` made for pattern strings, for the same reason: this toolchain's
@@ -9,15 +11,18 @@ needs (turning `%XX` into a single decoded character as it goes), so one uniform
 recursion handles splitting *and* decoding rather than mixing `String.splitOn` with a separate
 decode pass.
 
-This module only exists because `Routing/Server.lean` now threads the full `Request Body.Stream`
-into every handler (`Result := Request Body.Stream → ContextAsync (Response Body.Any)`) -- once a
+This module only exists because `Routing/Server.lean` threads the full `Request Body.Stream` into
+every handler (`Result := Request Body.Stream → ContextAsync (Response Body.Any)`) -- once a
 handler can call `request.body.readAll (α := String)` to get the raw body, something has to turn
 that into `(name, value)` pairs, and `Std.Http.URI`'s query-string types aren't a fit (see
 `docs/todo-app-plan.md`: `URI.EncodedQueryString`'s constructor is `private` with a validity proof
 obligation, built for parsing URIs, not for reinterpreting an arbitrary body string).
 -/
 
-namespace Routing
+namespace Forms
+
+open Std Async
+open Std Http Server
 
 /-- One hex digit's numeric value (case-insensitive), or `none` if `c` isn't `[0-9a-fA-F]`. -/
 private def hexDigit (c : Char) : Option Nat :=
@@ -76,6 +81,12 @@ def parseFormBody (body : String) : List (String × String) :=
       let (k, v) := splitOnceEquals cs
       some (decodeComponent (String.ofList k), decodeComponent (String.ofList v))
 
+/-- Reads and decodes a `application/x-www-form-urlencoded` request body, returning the value of
+`name`, or `""` if the body has no such field. -/
+def formField (req : Request Body.Stream) (name : String) : Async String := do
+  let body ← req.body.readAll (α := String)
+  return ((parseFormBody body).lookup name).getD ""
+
 -- #guard tests: empty body, single/multiple pairs, `+`-as-space, `%XX` decoding (including
 -- decoding a literal `%` via `%25`), a valueless flag, an empty value, and tolerant handling of a
 -- malformed/trailing `%` escape.
@@ -89,4 +100,4 @@ def parseFormBody (body : String) : List (String × String) :=
 #guard parseFormBody "a=b%" = [("a", "b%")]
 #guard parseFormBody "a=b%zz" = [("a", "b%zz")]
 
-end Routing
+end Forms

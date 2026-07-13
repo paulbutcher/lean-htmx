@@ -24,7 +24,7 @@ HandlerType rest result` -- so substituting a function type here composes
 for free: a handler with captures takes its typed captures *then* the
 request, with no change needed to `Handler.lean`/`Route.lean` or their
 existing proofs/tests. This is what lets a handler read a POST body
-(`request.body.readAll`, see `Routing/FormBody.lean`) or a header (e.g.
+(`request.body.readAll`, see `Forms/FormBody.lean`) or a header (e.g.
 htmx's `HX-Current-URL`) without `dispatch` itself needing to know
 anything about either. -/
 abbrev Result := Request Body.Stream → ContextAsync (Response Body.Any)
