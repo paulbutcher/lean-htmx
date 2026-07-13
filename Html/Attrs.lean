@@ -86,6 +86,20 @@ def InputAttrs.render (a : InputAttrs) : String :=
     renderBoolAttr "checked" a.checked ++ renderBoolAttr "required" a.required ++
     renderBoolAttr "readonly" a.readonly
 
+/-- Typed attributes for an external `<script src="...">` tag (used by
+`Html.document`'s `scripts` parameter, e.g. for loading a library from a
+CDN). `integrity`/`crossorigin` carry Subresource Integrity metadata --
+load-bearing for a CDN-hosted script (it's what lets the browser refuse a
+tampered file instead of silently running it), not decorative, so they're
+modeled explicitly here rather than left to the `rawAttrs` escape hatch. -/
+structure ScriptAttrs where
+  src : String
+  integrity : Option String := none
+  crossorigin : Option String := none
+
+def ScriptAttrs.render (a : ScriptAttrs) : String :=
+  renderAttr "src" a.src ++ renderOpt "integrity" a.integrity ++ renderOpt "crossorigin" a.crossorigin
+
 -- #guard tests, one (or more) per attribute.
 #guard HtmlAttrs.render {} = ""
 #guard HtmlAttrs.render { id := some "x" } = " id=\"x\""
@@ -101,6 +115,10 @@ def InputAttrs.render (a : InputAttrs) : String :=
 #guard AAttrs.render { href := "x", target := some "_blank" } = " href=\"x\" target=\"_blank\""
 
 #guard ImgAttrs.render { src := "a.png", alt := "desc" } = " src=\"a.png\" alt=\"desc\""
+
+#guard ScriptAttrs.render { src := "/a.js" } = " src=\"/a.js\""
+#guard ScriptAttrs.render { src := "/a.js", integrity := some "sha384-x", crossorigin := some "anonymous" }
+  = " src=\"/a.js\" integrity=\"sha384-x\" crossorigin=\"anonymous\""
 
 #guard InputAttrs.render {} = " type=\"text\""
 #guard InputAttrs.render { disabled := true } = " type=\"text\" disabled"

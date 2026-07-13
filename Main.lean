@@ -8,6 +8,15 @@ open Std Http Server
 open Html
 open Routing
 
+-- htmx itself, loaded from the official jsDelivr CDN with Subresource
+-- Integrity pinned to the fetched version -- without this, the `hx-get`
+-- attributes below are just inert data attributes; nothing in the browser
+-- knows to act on them.
+def htmxScript : ScriptAttrs :=
+  { src := "https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
+    integrity := some "sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+    crossorigin := some "anonymous" }
+
 -- `Htmx.button` is used qualified (not `open Htmx`) specifically to show
 -- an Htmx tag and a plain Html tag composing in the same list with no
 -- special glue -- `Htmx.button`'s result is a plain `Html.Node .phrasing`
@@ -18,7 +27,11 @@ def page : String :=
       p ["Served by a ", strong ["typed"], " HTML library." ],
       Htmx.button ["Ping"] { hxGet := some "/ping", hxTarget := some "#result", hxSwap := some .innerHTML },
       div [] { id := some "result" } ]
+    (scripts := [htmxScript])
     (lang := some "en")
+
+def pingFragment : String :=
+  Node.render (strong ["pong"])
 
 def helloPage (name : String) : String :=
   document (pretty := true) s!"Hello, {name}"
@@ -36,7 +49,7 @@ def helloPage (name : String) : String :=
 -- `/hello/:name:String` pattern when this table was built.
 def routes : List (Route Result) :=
   [ route .get "/" (Response.ok.html page : Result),
-    route .get "/ping" (Response.ok.html "<strong>pong</strong>" : Result),
+    route .get "/ping" (Response.ok.html pingFragment : Result),
     route .get "/hello/:name:String" (fun (name : String) => (Response.ok.html (helloPage name) : Result)) ]
 
 def main : IO Unit := Async.block do

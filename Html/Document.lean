@@ -1,5 +1,6 @@
 import Html.Node
 import Html.Escape
+import Html.Attrs
 import Html.Tags
 
 /-!
@@ -25,8 +26,10 @@ the quadratic-prepend trap documented in Phase 0/1.
 
 Always emits `<meta charset="utf-8">` (a near-universal default); `meta`
 supplies additional `name`/`content` pairs (e.g. `viewport`,
-`description`), and `stylesheets` supplies `<link rel="stylesheet">`
-`href`s.
+`description`), `stylesheets` supplies `<link rel="stylesheet">` `href`s,
+and `scripts` supplies `<script src="...">` tags (e.g. a CDN-hosted
+library) -- unlike `link`, `script` isn't a void element, so it's built
+via `Node.element` with no children rather than `Node.voidElement`.
 
 `pretty` selects indented (`Node.renderPretty`) vs. compact (`Node.render`)
 output -- Phase 6; `unit` is the string repeated per indentation level
@@ -34,6 +37,7 @@ output -- Phase 6; `unit` is the string repeated per indentation level
 is for debugging/reading generated markup, not size-sensitive serving. -/
 def document (title : String) (body : List (Node .flow))
     (metaTags : List (String × String) := []) (stylesheets : List String := [])
+    (scripts : List ScriptAttrs := [])
     (lang : Option String := none) (pretty : Bool := false) (unit : String := "  ") : String :=
   let charsetNode : Node .flow := Node.voidElement .flow "meta" (renderAttr "charset" "utf-8")
   let metaNodes : List (Node .flow) :=
@@ -42,9 +46,11 @@ def document (title : String) (body : List (Node .flow))
   let linkNodes : List (Node .flow) :=
     stylesheets.map (fun href =>
       Node.voidElement .flow "link" (renderAttr "rel" "stylesheet" ++ renderAttr "href" href))
+  let scriptNodes : List (Node .flow) :=
+    scripts.map (fun s => Node.element .flow "script" [] s.render)
   let titleNode : Node .flow := Node.textElement .flow "title" title
   let headNode : Node .flow :=
-    Node.element .flow "head" ([charsetNode, titleNode] ++ metaNodes ++ linkNodes)
+    Node.element .flow "head" ([charsetNode, titleNode] ++ metaNodes ++ linkNodes ++ scriptNodes)
   let bodyNode : Node .flow := Node.element .flow "body" body
   let htmlAttrsStr := match lang with
     | some l => renderAttr "lang" l
@@ -65,6 +71,12 @@ def document (title : String) (body : List (Node .flow))
   = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>T</title>" ++
     "<link rel=\"stylesheet\" href=\"/style.css\"></head><body></body></html>"
 #guard document "<script>" [] = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>&lt;script&gt;</title></head><body></body></html>"
+#guard document "T" [] [] [] [{ src := "/a.js" }]
+  = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>T</title>" ++
+    "<script src=\"/a.js\"></script></head><body></body></html>"
+#guard document "T" [] [] [] [{ src := "/a.js", integrity := some "sha384-x", crossorigin := some "anonymous" }]
+  = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>T</title>" ++
+    "<script src=\"/a.js\" integrity=\"sha384-x\" crossorigin=\"anonymous\"></script></head><body></body></html>"
 
 #guard document "T" [] (pretty := true)
   = "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>T</title>\n  </head>\n  <body></body>\n</html>"
