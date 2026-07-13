@@ -11,32 +11,28 @@ open Html
 open Routing
 open Forms
 
-def currentFilter (req : Request Body.Stream) : Todo.Filter :=
-  match req.line.headers.get? (.ofString! "hx-current-url") with
+def render (db : SQLite) (filter : Todo.Filter)
+    (renderHtml : Array Todo.Item → Array Todo.Item → Todo.Filter → String) :
+    ContextAsync (Response Body.Any) := do
+  let items ← Todo.list db filter
+  let allItems ← Todo.list db .all
+  Response.ok.html (renderHtml items allItems filter)
+
+/-- Renders the fragment for the filter the client's currently viewing (`HX-Current-URL`) --
+what every mutating route responds with. -/
+def renderMutation (db : SQLite) (req : Request Body.Stream) : ContextAsync (Response Body.Any) :=
+  let currentFilter := match req.line.headers.get? (.ofString! "hx-current-url") with
   | some v => Todo.filterFromPath v.value
   | none => .all
+  render db currentFilter Todo.mutationFragment
 
-def pageResponse (db : SQLite) (filter : Todo.Filter) : ContextAsync (Response Body.Any) := do
-  let items ← Todo.list db filter
-  Response.ok.html (Todo.page filter items)
-
-def mutationResponse (db : SQLite) (filter : Todo.Filter) : ContextAsync (Response Body.Any) := do
-  let items ← Todo.list db filter
-  Response.ok.html (Todo.mutationFragment items filter)
-
-def homeHandler (db : SQLite) (_req : Request Body.Stream) : ContextAsync (Response Body.Any) :=
-  pageResponse db .all
-
-def activeHandler (db : SQLite) (_req : Request Body.Stream) : ContextAsync (Response Body.Any) :=
-  pageResponse db .active
-
-def completedHandler (db : SQLite) (_req : Request Body.Stream) : ContextAsync (Response Body.Any) :=
-  pageResponse db .completed
+def pageHandler (db : SQLite) (filter : Todo.Filter) (_req : Request Body.Stream) : ContextAsync (Response Body.Any) :=
+  render db filter Todo.page
 
 def addHandler (db : SQLite) (req : Request Body.Stream) : ContextAsync (Response Body.Any) := do
   let title ← formField req "title"
   Todo.add db title
-  mutationResponse db (currentFilter req)
+  renderMutation db req
 
 /-- Swaps one todo's `<li>` into edit mode. Not a mutation (nothing in the DB changes), so unlike
 every other route below it targets and returns just that one item, not the whole list section. -/
@@ -51,31 +47,31 @@ def saveHandler (db : SQLite) (id : Nat) (req : Request Body.Stream) :
     ContextAsync (Response Body.Any) := do
   let title ← formField req "title"
   Todo.setTitle db (Int64.ofNat id) title
-  mutationResponse db (currentFilter req)
+  renderMutation db req
 
 def toggleHandler (db : SQLite) (id : Nat) (req : Request Body.Stream) :
     ContextAsync (Response Body.Any) := do
   Todo.toggle db (Int64.ofNat id)
-  mutationResponse db (currentFilter req)
+  renderMutation db req
 
 def deleteHandler (db : SQLite) (id : Nat) (req : Request Body.Stream) :
     ContextAsync (Response Body.Any) := do
   Todo.delete db (Int64.ofNat id)
-  mutationResponse db (currentFilter req)
+  renderMutation db req
 
 def toggleAllHandler (db : SQLite) (req : Request Body.Stream) : ContextAsync (Response Body.Any) := do
   Todo.toggleAll db
-  mutationResponse db (currentFilter req)
+  renderMutation db req
 
 def clearCompletedHandler (db : SQLite) (req : Request Body.Stream) :
     ContextAsync (Response Body.Any) := do
   Todo.clearCompleted db
-  mutationResponse db (currentFilter req)
+  renderMutation db req
 
 def routes (db : SQLite) : List (Route Result) :=
-  [ route .get "/" (homeHandler db),
-    route .get "/active" (activeHandler db),
-    route .get "/completed" (completedHandler db),
+  [ route .get "/" (pageHandler db .all),
+    route .get "/active" (pageHandler db .active),
+    route .get "/completed" (pageHandler db .completed),
     route .post "/todos" (addHandler db),
     route .get "/todos/:id:Nat/edit" (editHandler db),
     route .put "/todos/:id:Nat" (saveHandler db),
@@ -87,7 +83,6 @@ def routes (db : SQLite) : List (Route Result) :=
 def main : IO Unit := Async.block do
   let db ← SQLite.open ":memory:"
   Todo.initSchema db
-  let addr := .v4 ⟨.ofParts 127 0 0 1, 2000⟩
-  let handler := toHandler (routes db)
-  let server <- serve addr handler
-  server.waitShutdown
+  let addr := ⟨.ofParts 127 0 0 1, 2000⟩ |> .v4
+  let handler := db |> routes |> toHandler
+  serve addr handler >>= waitShutdown

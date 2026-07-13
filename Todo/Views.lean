@@ -110,12 +110,14 @@ def filterLink (current target : Filter) (label : String) : Node .flow :=
          (attrs := { class_ := if current == target then "selected" else none }) ]
 
 /-- The out-of-band footer: item count (correctly pluralized), the three filter links, and a
-clear-completed button shown only when there's something to clear. `hxSwapOob := "true"` is what
-lets every mutation's response update this alongside its primary `#todo-list-section` swap in one
-round trip. -/
-def footerFragment (items : Array Item) (filter : Filter) : Node .flow :=
-  let activeCount := (items.filter (!·.completed)).size
-  let completedCount := items.size - activeCount
+clear-completed button shown only when there's something to clear. Takes `allItems` -- every todo,
+regardless of `filter` -- since the count and clear-completed button must reflect the whole list
+even while viewing just the active or just the completed ones. `hxSwapOob := "true"` is what lets
+every mutation's response update this alongside its primary `#todo-list-section` swap in one round
+trip. -/
+def footerFragment (allItems : Array Item) (filter : Filter) : Node .flow :=
+  let activeCount := (allItems.filter (!·.completed)).size
+  let completedCount := allItems.size - activeCount
   let countLabel := if activeCount == 1 then "1 item left" else s!"{activeCount} items left"
   Htmx.footer
     ([ p [countLabel] (attrs := { class_ := "todo-count" }),
@@ -132,15 +134,17 @@ def footerFragment (items : Array Item) (filter : Filter) : Node .flow :=
 
 /-- Shared by every mutating route: `listSection` (the primary `hx-target`/`hx-swap="outerHTML"`
 swap) followed immediately by the out-of-band `footerFragment`, so one response keeps the list and
-the footer's count/filters/clear-completed button in sync. -/
-def mutationFragment (items : Array Item) (filter : Filter) : String :=
-  Node.render (listSection items) ++ Node.render (footerFragment items filter)
+the footer's count/filters/clear-completed button in sync. `items` is the current filter's subset
+(for the list itself); `allItems` is every todo (for the footer's count). -/
+def mutationFragment (items allItems : Array Item) (filter : Filter) : String :=
+  Node.render (listSection items) ++ Node.render (footerFragment allItems filter)
 
 /-- The full page: header with the new-todo form (`hx-post /todos`, resetting itself after a
 successful add since only `#todo-list-section` is swapped, not the form), the list section, and
 the out-of-band-capable footer rendered inline (its `hx-swap-oob` attribute is simply ignored on a
-normal full-page load, only mattering when it arrives as part of an htmx swap). -/
-def page (filter : Filter) (items : Array Item) : String :=
+normal full-page load, only mattering when it arrives as part of an htmx swap). `items` is the
+current filter's subset (for the list itself); `allItems` is every todo (for the footer's count). -/
+def page (items allItems : Array Item) (filter : Filter) : String :=
   document (pretty := true) (lang := "en")
     [ head
         [ meta_ [("charset", "utf-8")], title "todos", script htmxScript, link todomvcCss ],
@@ -158,7 +162,7 @@ def page (filter : Filter) (items : Array Item) : String :=
                     (rawAttrs := [("hx-on::after-request", "this.reset()")]) ]
                 (attrs := { class_ := "header" }),
               listSection items,
-              footerFragment items filter ]
+              footerFragment allItems filter ]
             (attrs := { class_ := "todoapp" }),
           footer [p ["Double-click a todo to edit it."]] (attrs := { class_ := "info" }) ] ]
 
