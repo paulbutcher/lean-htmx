@@ -186,9 +186,12 @@ Confirmed working by direct compilation there; don't re-spike these, adapt the c
   fail at the point that matters). The macro must `throwErrorAt` the offending fragment's own
   string literal on `none`, itself — there is no version of `parsePattern!` as an ordinary `def`
   that turns a malformed string into a compile error.
-- **Tree-wide duplicate checks.** Two nodes sharing an `as` name anywhere in the tree (not just
-  siblings), and two different `as` names resolving to the same full pattern (compared as resolved
-  `List PathSeg`, not local text) are both macro-time errors pointing at the second node.
+- **Tree-wide duplicate-name check.** Two nodes sharing an `as` name anywhere in the tree (not just
+  siblings) is a macro-time error pointing at the second node. Port this one unchanged.
+- **Tree-wide duplicate-pattern check needs a fix, not a straight port (see §5).** The reverted
+  spike compared two `as` names' resolved `List PathSeg` with plain structural equality to catch
+  two names resolving to the same full pattern — but that comparison has a blind spot this doc's
+  review caught: it's wrong to inherit unexamined.
 - **Order-sensitivity of the flattened dispatch table.** `dispatchTable` is first-match-wins over a
   flat list; a literal segment (`/todos/toggle-all`) must still beat a same-arity capture
   (`/todos/:id:Nat`) after the tree is flattened. Keep the positive regression that dispatches
@@ -226,6 +229,20 @@ Confirmed working by direct compilation there; don't re-spike these, adapt the c
   partially, before its captures) rather than the reverted spike's `urls db` — pick one order and
   keep it consistent; `ctx` first matches today's existing handlers' existing `db`-first
   convention (`Main.lean`), minimizing the diff Phase 3 has to make to each one.
+- **Duplicate-pattern comparison must ignore capture names — a correctness fix, not a straight
+  port.** `PathSeg.capture` carries a `name : String` (`Routing/Pattern.lean`), and its derived
+  `DecidableEq` treats that name as significant. But nothing downstream cares about it:
+  `HandlerType`/`dispatch` (`Routing/Handler.lean`) and `UrlType`/`renderUrl` (`Routing/Url.lean`)
+  all match on `.capture _ kind`, discarding the name entirely. So `/items/:id:Nat` as `item` and
+  `/items/:pk:Nat` as `itemAgain` are functionally the same route — same dispatch behavior, same
+  generated `Urls` field type — but the reverted spike's raw-`List PathSeg`-equality duplicate
+  check would **not** flag them as a collision, because the two `PathSeg` lists differ in a field
+  (`name`) that only exists for documentation and is never inspected at runtime. Left unfixed, the
+  second name silently shadows the first in the flattened, first-match-wins dispatch table (§4's
+  own order-sensitivity concern, working against the very check meant to catch it). Fix: compare a
+  *name-erased* projection of each resolved `List PathSeg` (map `.capture _ kind ↦ .capture ""
+  kind` before comparing, or an equivalent shape-only comparison) — never the raw list. New negative
+  regression for this in Phase 2 (§7).
 
 ## 6. Not in scope
 
@@ -270,7 +287,13 @@ building the full nested-fragment grammar around it. Do this against a toy examp
       Confirm with a throwaway `#eval`/`elabCommand` test that it produces `Nat → String` (not
       `UrlType (parsePattern! ...)`) for a two-capture pattern, and that a struct field declared
       with the emitted syntax is usable in an ordinary `#guard` equality check with no instance-
-      search friction (the exact failure mode `docs/routing-design-plan.md` §4 hit).
+      search friction (the exact failure mode `docs/routing-design-plan.md` §4 hit). This check is
+      load-bearing for §5's whole premise, not a mechanical formality — if it *does* still hit
+      instance-search friction despite emitting concrete arrow types, stop and reconsider §5 before
+      building the full grammar around it. Likely fallback: `Routing/Url.lean`'s own workaround
+      (bind each result to its own top-level `def` before comparing — see `rootUrl`/`todosUrl`
+      there) applied to every downstream consumer of the generated struct, which is worth knowing
+      about now rather than after Phase 2 is built on the assumption it's unnecessary.
 - [ ] Confirm `elabCommand` can splice a `structure ... where ...` command the same way the
       reverted spike spliced `def`s (a distinct code path from anything already proven — verify it
       directly, don't assume it generalizes).
@@ -287,7 +310,9 @@ structure, adapted for the new surface syntax and generated-struct output.
 - [ ] Implement the tree walk: thread resolved `List PathSeg` down through nested fragments
       (`processItems` in the old file is the template), collecting every `method => handler` entry
       (with resolved segs) and every `as`-named node (with resolved segs), exactly as before.
-- [ ] Port the tree-wide duplicate-name and duplicate-pattern checks unchanged (§4).
+- [ ] Port the tree-wide duplicate-name check unchanged (§4). Port the duplicate-pattern check
+      *with* the name-erasure fix (§4/§5) — compare patterns with capture names blanked out, never
+      the raw `List PathSeg`.
 - [ ] Generate the `structure <Name>Urls where ...` command from the named nodes, using Phase 1's
       field-type helper — one field per `as`-named node, field name = the `as` identifier, field
       type computed from that node's resolved segs.
@@ -299,12 +324,31 @@ structure, adapted for the new surface syntax and generated-struct output.
 - [ ] Port the positive regression (2-3 levels of nesting, a captured node with two methods sharing
       one written pattern, a same-arity literal/capture collision exercised through the macro's
       actual flattened `dispatchTable` output) — adapt method/handler signatures to the new
-      `ctx → urls → captures → req` shape.
-- [ ] Port the four negative regressions as `#guard_msgs`: wrong-arity handler, malformed fragment
-      text, duplicate `as` name, two names resolving to the same pattern. Confirm the wrong-arity
-      error still points at the actual handler/line, not an opaque expansion dump (§4's "confirmed
-      error quality" — re-confirm for the new shape, don't assume it carries over unchanged just
-      because the old one worked).
+      `ctx → urls → captures → req` shape. **Extend it** with a case the reverted spike never
+      exercised: an `as`-named node with a method entry directly on it *and* nested child fragments
+      (e.g. `"/todos" as todos { post => addHandler; "/:id:Nat" as todo { ... } }`) — this is
+      exactly the shape the real Todo migration (Phase 3) depends on. Neither `PositiveTest`'s
+      `item` node (method, no children) nor its `/items` node (children, no `as`/method) covers it.
+- [ ] Add a positive regression with two `application` blocks in the *same* namespace (different
+      binder names, e.g. `app1`/`app2`), each generating its own `<Name>Urls` struct and `def`.
+      This is the direct check of §5's claim that deriving generated names from the binder — rather
+      than the reverted spike's fixed `urls`/`routes` idents — removes the multi-block collision
+      the old version needed per-test `namespace` isolation to avoid. The reverted spike never
+      tested this because it wasn't fixed there; confirm it by direct compilation rather than
+      assuming the fix works.
+- [ ] Add two small edge-case checks the worked example doesn't exercise: an `application` block
+      with zero `as`-named nodes (generated `structure` has no fields — confirm the empty anonymous
+      constructor splice `{ }` elaborates) and one with zero method entries anywhere (generated
+      `toHandler [...]` list is empty). Neither should error; both are cheap and untested by
+      everything above.
+- [ ] Port five negative regressions as `#guard_msgs`: wrong-arity handler, malformed fragment
+      text, duplicate `as` name, two names resolving to the same pattern (same literal/capture-kind
+      shape), and — new, not present in the reverted spike — two names resolving to the same shape
+      via *different capture variable names* (e.g. `/items/:id:Nat` as `item` vs `/items/:pk:Nat` as
+      `itemAgain`), confirming the §4/§5 name-erasure fix actually catches what raw `List PathSeg`
+      equality misses. Confirm the wrong-arity error still points at the actual handler/line, not an
+      opaque expansion dump (§4's "confirmed error quality" — re-confirm for the new shape, don't
+      assume it carries over unchanged just because the old one worked).
 - [ ] `lean_diagnostic_messages` on the file, then `lake build`, before moving to Phase 3.
 
 ### Phase 3 — migrate the Todo app
@@ -336,6 +380,15 @@ the old design (per-view-function URL threading) — re-derive the call-site lis
 - [ ] Update every `TodoTests/Views.lean` call site that currently calls a view function without a
       `urls` argument — pass `app.urls` (or a local equivalent built the same way, if `Main` isn't
       importable from `TodoTests` — check the current import graph before assuming either way).
+- [ ] Add a direct regression against the *real* generated `app`, not just the toy harness from
+      Phase 2 — e.g. `#guard app.urls.todo 7 = "/todos/7"` (the concrete claim §1 makes) plus one
+      `dispatchTable`-level `#guard` exercising the real flattened route list (mirroring
+      `PositiveTest`'s `dispatchTable (routes 0) ...` checks, but against `app`'s actual handler
+      list). This matters because `TodoTests` currently only covers `Views.lean`/`Db.lean` (check
+      before assuming otherwise) — nothing today exercises HTTP dispatch, so `lake build && lake
+      test` passing would not, by itself, catch a transcribed-wrong pattern string (e.g. the
+      `/todos/completed` vs `/todos/clear-completed` risk this phase already flags above) as long
+      as the same wrong string were used consistently on both the route and the `Urls` side.
 - [ ] `lean_build` (imports changed), then `lake build`, then `lake test` (or whatever this repo's
       current test-running command is — check `lakefile.toml`/README rather than assuming `lake
       test` still applies) — all three must pass before considering this phase done.
