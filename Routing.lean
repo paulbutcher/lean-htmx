@@ -3,6 +3,7 @@ import Routing.Handler
 import Routing.Route
 import Routing.Server
 import Routing.Url
+import Routing.RoutesMacro
 
 /-!
 # `Routing`: a typed HTTP path router

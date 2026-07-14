@@ -39,10 +39,11 @@ htmx's `HX-Current-URL` request header sends the whole current-page URL, not jus
 `endsWith` rather than exact equality is what lets `Main.lean`'s route handlers pass that header's
 raw value straight in) denotes, defaulting to `.all` for anything that doesn't end in `/active` or
 `/completed`. -/
-def Filter.path : Filter → String
-  | .all => indexUrl
-  | .active => activeUrl
-  | .completed => completedUrl
+def Filter.path (f : Filter) (urls : Urls) : String :=
+  match f with
+  | .all => urls.index
+  | .active => urls.active
+  | .completed => urls.completed
 
 def filterFromPath (path : String) : Filter :=
   if path.endsWith "/active" then .active
@@ -53,19 +54,19 @@ def filterFromPath (path : String) : Filter :=
 mode on double-click (`hx-trigger="dblclick"`), and a delete button (`hx-delete`). All three post
 back against `#todo-list-section` (see `listSection`) so the shared `mutationFragment` renderer
 handles every one of them uniformly. -/
-def itemView (item : Item) : Node .flow :=
+def itemView (urls : Urls) (item : Item) : Node .flow :=
   let itemId := s!"todo-{item.id}"
   li
     [ div
         [ Htmx.input
             { type := "checkbox", checked := item.completed }
-            (hx := { hxPost := todoToggleUrl item.id.toNatClampNeg, hxTarget := "#todo-list-section",
+            (hx := { hxPost := urls.todoToggle item.id.toNatClampNeg, hxTarget := "#todo-list-section",
                      hxSwap := some .outerHTML })
             (attrs := { class_ := "toggle" }),
           Htmx.label [item.title]
-            (hx := { hxGet := todoEditUrl item.id.toNatClampNeg, hxTrigger := "dblclick",
+            (hx := { hxGet := urls.todoEdit item.id.toNatClampNeg, hxTrigger := "dblclick",
                      hxTarget := s!"#{itemId}", hxSwap := some .outerHTML }),
-          Htmx.button [] (hx := { hxDelete := todoUrl item.id.toNatClampNeg, hxTarget := "#todo-list-section",
+          Htmx.button [] (hx := { hxDelete := urls.todo item.id.toNatClampNeg, hxTarget := "#todo-list-section",
                                    hxSwap := some .outerHTML })
             (attrs := { class_ := "destroy" }) ]
         (attrs := { class_ := "view" }) ]
@@ -76,12 +77,12 @@ def itemView (item : Item) : Node .flow :=
 on blur or Enter (`hx-trigger`), `hx-put`s the new title, and -- like every other mutation -- swaps
 `#todo-list-section` and the out-of-band footer, since an edit can empty the title and delete the
 todo (`Todo.setTitle`), which *does* change the count. -/
-def itemEditView (item : Item) : Node .flow :=
+def itemEditView (urls : Urls) (item : Item) : Node .flow :=
   let itemId := s!"todo-{item.id}"
   li
     [ Htmx.input
         { type := "text", name := "title", value := item.title }
-        (hx := { hxPut := todoUrl item.id.toNatClampNeg, hxTrigger := "blur, keyup[key=='Enter']",
+        (hx := { hxPut := urls.todo item.id.toNatClampNeg, hxTrigger := "blur, keyup[key=='Enter']",
                  hxTarget := "#todo-list-section", hxSwap := some .outerHTML })
         (attrs := { class_ := "edit" })
         (rawAttrs := [("autofocus", "autofocus")]) ]
@@ -90,24 +91,24 @@ def itemEditView (item : Item) : Node .flow :=
 /-- The swappable region containing the "mark all as complete" toggle and the list itself.
 `id="todo-list-section"` is what every mutating handler's `hx-target`/`hx-swap="outerHTML"` names
 -- see `mutationFragment`. -/
-def listSection (items : Array Item) : Node .flow :=
+def listSection (urls : Urls) (items : Array Item) : Node .flow :=
   let allCompleted := items.size > 0 && items.all (·.completed)
   section_
     [ Htmx.input
         { type := "checkbox", checked := allCompleted }
-        (hx := { hxPost := toggleAllUrl, hxTarget := "#todo-list-section",
+        (hx := { hxPost := urls.toggleAll, hxTarget := "#todo-list-section",
                  hxSwap := some .outerHTML })
         (attrs := { id := "toggle-all", class_ := "toggle-all" }),
       label [] (attrs := {}) (rawAttrs := [("for", "toggle-all")]),
-      ul (items.toList.map itemView) (attrs := { class_ := "todo-list" }) ]
+      ul (items.toList.map (itemView urls)) (attrs := { class_ := "todo-list" }) ]
     (attrs := { id := "todo-list-section", class_ := "main" })
 
 /-- One `<li>` in the footer's filter list: a plain (non-htmx) link, so clicking a filter does a
 normal full-page navigation to `/`, `/active`, or `/completed` -- simplest way to keep "which
 filter" correctly reflected on the next htmx-driven mutation's `HX-Current-URL` header, with no
 client-side state to keep in sync. -/
-def filterLink (current target : Filter) (label : String) : Node .flow :=
-  li [ a { href := target.path } [label]
+def filterLink (urls : Urls) (current target : Filter) (label : String) : Node .flow :=
+  li [ a { href := target.path urls } [label]
          (attrs := { class_ := if current == target then "selected" else none }) ]
 
 /-- The out-of-band footer: item count (correctly pluralized), the three filter links, and a
@@ -117,18 +118,18 @@ even while viewing just the active or just the completed ones. `hxSwapOob := "tr
 every mutation's response update this alongside its primary `#todo-list-section` swap in one round
 trip. The count is a bare `<span>`, matching what the TodoMVC stylesheet expects it to be -- no
 margin override needed, since `<span>` (unlike `<p>`) has no browser default margin to cancel. -/
-def footerFragment (allItems : Array Item) (filter : Filter) : Node .flow :=
+def footerFragment (urls : Urls) (allItems : Array Item) (filter : Filter) : Node .flow :=
   let activeCount := (allItems.filter (!·.completed)).size
   let completedCount := allItems.size - activeCount
   let countLabel := if activeCount == 1 then "1 item left" else s!"{activeCount} items left"
   Htmx.footer
     ([ (span [countLabel] (attrs := { class_ := "todo-count" }) : Node .flow),
-       ul [ filterLink filter .all "All", filterLink filter .active "Active",
-            filterLink filter .completed "Completed" ]
+       ul [ filterLink urls filter .all "All", filterLink urls filter .active "Active",
+            filterLink urls filter .completed "Completed" ]
          (attrs := { class_ := "filters" }) ]
       ++ if completedCount > 0 then
            [ (Htmx.button ["Clear completed"]
-               (hx := { hxDelete := clearCompletedUrl, hxTarget := "#todo-list-section",
+               (hx := { hxDelete := urls.clearCompleted, hxTarget := "#todo-list-section",
                         hxSwap := some .outerHTML })
                (attrs := { class_ := "clear-completed" }) : Node .flow) ]
          else [])
@@ -138,15 +139,15 @@ def footerFragment (allItems : Array Item) (filter : Filter) : Node .flow :=
 swap) followed immediately by the out-of-band `footerFragment`, so one response keeps the list and
 the footer's count/filters/clear-completed button in sync. `items` is the current filter's subset
 (for the list itself); `allItems` is every todo (for the footer's count). -/
-def mutationFragment (items allItems : Array Item) (filter : Filter) : String :=
-  Node.render (listSection items) ++ Node.render (footerFragment allItems filter)
+def mutationFragment (urls : Urls) (items allItems : Array Item) (filter : Filter) : String :=
+  Node.render (listSection urls items) ++ Node.render (footerFragment urls allItems filter)
 
 /-- The full page: header with the new-todo form (`hx-post /todos`, resetting itself after a
 successful add since only `#todo-list-section` is swapped, not the form), the list section, and
 the out-of-band-capable footer rendered inline (its `hx-swap-oob` attribute is simply ignored on a
 normal full-page load, only mattering when it arrives as part of an htmx swap). `items` is the
 current filter's subset (for the list itself); `allItems` is every todo (for the footer's count). -/
-def page (items allItems : Array Item) (filter : Filter) : String :=
+def page (urls : Urls) (items allItems : Array Item) (filter : Filter) : String :=
   document (pretty := true) (lang := "en")
     [ head
         [ meta_ [("charset", "utf-8")], title "todos", script htmxScript, link todomvcCss ],
@@ -159,12 +160,12 @@ def page (items allItems : Array Item) (filter : Filter) : String :=
                         { name := "title", placeholder := "What needs to be done?" }
                         (attrs := { class_ := "new-todo" })
                         (rawAttrs := [("autofocus", "autofocus")]) ]
-                    (hx := { hxPost := todosUrl, hxTarget := "#todo-list-section",
+                    (hx := { hxPost := urls.todos, hxTarget := "#todo-list-section",
                              hxSwap := some .outerHTML })
                     (rawAttrs := [("hx-on::after-request", "this.reset()")]) ]
                 (attrs := { class_ := "header" }),
-              listSection items,
-              footerFragment allItems filter ]
+              listSection urls items,
+              footerFragment urls allItems filter ]
             (attrs := { class_ := "todoapp" }),
           footer [p ["Double-click a todo to edit it."]] (attrs := { class_ := "info" }) ] ]
 

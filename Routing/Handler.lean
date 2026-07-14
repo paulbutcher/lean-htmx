@@ -41,7 +41,7 @@ def dispatch {result : Type} :
   | .capture _ .string :: rest, h, p :: ps => dispatch rest (h p) ps
   | _, _, _ => none
 
-private def userPattern : List PathSeg := parsePattern! "/users/:id:Nat"
+private def userPattern : List PathSeg := (parsePattern "/users/:id:Nat").getD []
 
 private def userHandler : HandlerType userPattern String :=
   fun (id : Nat) => s!"user #{id}"
