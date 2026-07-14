@@ -125,6 +125,31 @@ structure LinkAttrs where
 def LinkAttrs.render (a : LinkAttrs) : String :=
   renderAttr "rel" a.rel ++ renderAttr "href" a.href
 
+/-- Typed attributes for `<q>`. `cite` is the (optional) URL of a source
+document/message explaining the quote. -/
+structure QAttrs where
+  cite : Option String := none
+
+def QAttrs.render (a : QAttrs) : String :=
+  renderOpt "cite" a.cite
+
+/-- Typed attributes for `<time>`. `datetime` is the machine-readable
+equivalent of the element's human-readable text content. -/
+structure TimeAttrs where
+  datetime : Option String := none
+
+def TimeAttrs.render (a : TimeAttrs) : String :=
+  renderOpt "datetime" a.datetime
+
+/-- Typed attributes for `<data>`. `value` (required) is the
+machine-readable equivalent of the element's human-readable text
+content. -/
+structure DataAttrs where
+  value : String
+
+def DataAttrs.render (a : DataAttrs) : String :=
+  renderAttr "value" a.value
+
 -- #guard tests, one (or more) per attribute. Optional `String` fields are
 -- set via the `Coe String (Option String)` instance above, not `some` --
 -- see that instance's doc comment for why this is safe here.
@@ -163,6 +188,299 @@ example := HtmlAttrs.render { id := true }
 
 #guard LinkAttrs.render { rel := "stylesheet", href := "/style.css" }
   = " rel=\"stylesheet\" href=\"/style.css\""
+
+#guard QAttrs.render {} = ""
+#guard QAttrs.render { cite := "https://example.com" } = " cite=\"https://example.com\""
+
+#guard TimeAttrs.render {} = ""
+#guard TimeAttrs.render { datetime := "2026-07-14" } = " datetime=\"2026-07-14\""
+
+#guard DataAttrs.render { value := "42" } = " value=\"42\""
+
+/-- Typed attributes for `<ins>`/`<del>`. `cite` is the (optional) URL of a
+source document/message explaining the edit; `datetime` is the (optional)
+machine-readable time the edit was made. -/
+structure InsDelAttrs where
+  cite : Option String := none
+  datetime : Option String := none
+
+def InsDelAttrs.render (a : InsDelAttrs) : String :=
+  renderOpt "cite" a.cite ++ renderOpt "datetime" a.datetime
+
+#guard InsDelAttrs.render {} = ""
+#guard InsDelAttrs.render { cite := "https://example.com", datetime := "2026-07-14" }
+  = " cite=\"https://example.com\" datetime=\"2026-07-14\""
+
+/-- Typed attributes for `<col>`. `span` (optional) is the number of
+columns the element represents -- stays plain `String` for v1, same
+decision as every other value-bearing attribute (see 1.3). -/
+structure ColAttrs where
+  span : Option String := none
+
+def ColAttrs.render (a : ColAttrs) : String :=
+  renderOpt "span" a.span
+
+#guard ColAttrs.render {} = ""
+#guard ColAttrs.render { span := "2" } = " span=\"2\""
+
+/-- Typed attributes for `<fieldset>`. -/
+structure FieldsetAttrs where
+  disabled : Bool := false
+  name : Option String := none
+
+def FieldsetAttrs.render (a : FieldsetAttrs) : String :=
+  renderBoolAttr "disabled" a.disabled ++ renderOpt "name" a.name
+
+#guard FieldsetAttrs.render {} = ""
+#guard FieldsetAttrs.render { disabled := true, name := "x" } = " disabled name=\"x\""
+
+/-- Typed attributes for `<optgroup>`. `label` is required -- an optgroup
+without one has nothing to show as its group heading. -/
+structure OptgroupAttrs where
+  label : String
+  disabled : Bool := false
+
+def OptgroupAttrs.render (a : OptgroupAttrs) : String :=
+  renderAttr "label" a.label ++ renderBoolAttr "disabled" a.disabled
+
+#guard OptgroupAttrs.render { label := "Fruit" } = " label=\"Fruit\""
+#guard OptgroupAttrs.render { label := "Fruit", disabled := true } = " label=\"Fruit\" disabled"
+
+/-- Typed attributes for `<output>`. `for_` (trailing underscore -- `for`
+is a Lean keyword, same reason as `class_`/`section_`) is the
+space-separated list of ids of elements the output's value is calculated
+from. -/
+structure OutputAttrs where
+  for_ : Option String := none
+  name : Option String := none
+
+def OutputAttrs.render (a : OutputAttrs) : String :=
+  renderOpt "for" a.for_ ++ renderOpt "name" a.name
+
+#guard OutputAttrs.render {} = ""
+#guard OutputAttrs.render { for_ := "a b", name := "result" } = " for=\"a b\" name=\"result\""
+
+/-- Typed attributes for `<progress>`. Both stay plain `Option String`,
+same "value-bearing attributes stay `String` for v1" decision as
+elsewhere (1.3) -- no numeric type introduced just for these two fields. -/
+structure ProgressAttrs where
+  value : Option String := none
+  max : Option String := none
+
+def ProgressAttrs.render (a : ProgressAttrs) : String :=
+  renderOpt "value" a.value ++ renderOpt "max" a.max
+
+#guard ProgressAttrs.render {} = ""
+#guard ProgressAttrs.render { value := "50", max := "100" } = " value=\"50\" max=\"100\""
+
+/-- Typed attributes for `<meter>`. -/
+structure MeterAttrs where
+  value : Option String := none
+  min : Option String := none
+  max : Option String := none
+  low : Option String := none
+  high : Option String := none
+  optimum : Option String := none
+
+def MeterAttrs.render (a : MeterAttrs) : String :=
+  renderOpt "value" a.value ++ renderOpt "min" a.min ++ renderOpt "max" a.max ++
+    renderOpt "low" a.low ++ renderOpt "high" a.high ++ renderOpt "optimum" a.optimum
+
+#guard MeterAttrs.render {} = ""
+#guard MeterAttrs.render { value := "6", min := "0", max := "10" }
+  = " value=\"6\" min=\"0\" max=\"10\""
+
+/-- Typed attributes shared by `<details>`/`<dialog>`. `open_` (trailing
+underscore -- `open` is a Lean keyword, same reason as `class_`/`section_`/
+`for_`) is the single boolean attribute both elements have. -/
+structure OpenAttrs where
+  open_ : Bool := false
+
+def OpenAttrs.render (a : OpenAttrs) : String :=
+  renderBoolAttr "open" a.open_
+
+#guard OpenAttrs.render {} = ""
+#guard OpenAttrs.render { open_ := true } = " open"
+
+/-- Typed attributes for `<base>`. Both fields are independently optional
+-- a document typically sets one or the other (or both), not necessarily
+either. -/
+structure BaseAttrs where
+  href : Option String := none
+  target : Option String := none
+
+def BaseAttrs.render (a : BaseAttrs) : String :=
+  renderOpt "href" a.href ++ renderOpt "target" a.target
+
+#guard BaseAttrs.render {} = ""
+#guard BaseAttrs.render { href := "/", target := "_blank" } = " href=\"/\" target=\"_blank\""
+
+/-- Typed attributes for `<canvas>`. -/
+structure CanvasAttrs where
+  width : Option String := none
+  height : Option String := none
+
+def CanvasAttrs.render (a : CanvasAttrs) : String :=
+  renderOpt "width" a.width ++ renderOpt "height" a.height
+
+#guard CanvasAttrs.render {} = ""
+#guard CanvasAttrs.render { width := "300", height := "150" } = " width=\"300\" height=\"150\""
+
+/-- Typed attributes for `<slot>`. -/
+structure SlotAttrs where
+  name : Option String := none
+
+def SlotAttrs.render (a : SlotAttrs) : String :=
+  renderOpt "name" a.name
+
+#guard SlotAttrs.render {} = ""
+#guard SlotAttrs.render { name := "header" } = " name=\"header\""
+
+/-- Typed attributes for `<source>`. Dual-purpose in the real spec --
+inside `<picture>` it's `srcset`/`type`/`media` (no `src`); inside
+`<video>`/`<audio>` it's `src`/`type` (no `srcset`) -- not distinguished
+here, same documented-simplification spirit as the `ul`/`ol`/`table`
+content-model notes in `Html/Tags.lean`'s module doc. -/
+structure SourceAttrs where
+  src : Option String := none
+  srcset : Option String := none
+  type : Option String := none
+  media : Option String := none
+
+def SourceAttrs.render (a : SourceAttrs) : String :=
+  renderOpt "src" a.src ++ renderOpt "srcset" a.srcset ++ renderOpt "type" a.type ++
+    renderOpt "media" a.media
+
+#guard SourceAttrs.render {} = ""
+#guard SourceAttrs.render { src := "a.mp4", type := "video/mp4" }
+  = " src=\"a.mp4\" type=\"video/mp4\""
+
+/-- Typed attributes for `<track>`. `src` is required -- a track without
+one has nothing to load. -/
+structure TrackAttrs where
+  src : String
+  kind : Option String := none
+  srclang : Option String := none
+  label : Option String := none
+  default : Bool := false
+
+def TrackAttrs.render (a : TrackAttrs) : String :=
+  renderAttr "src" a.src ++ renderOpt "kind" a.kind ++ renderOpt "srclang" a.srclang ++
+    renderOpt "label" a.label ++ renderBoolAttr "default" a.default
+
+#guard TrackAttrs.render { src := "a.vtt" } = " src=\"a.vtt\""
+#guard TrackAttrs.render { src := "a.vtt", kind := "subtitles", srclang := "en", default := true }
+  = " src=\"a.vtt\" kind=\"subtitles\" srclang=\"en\" default"
+
+/-- Typed attributes for `<iframe>`. `src` is required; `title` is
+recommended for accessibility but stays optional (HTML validity doesn't
+require it). -/
+structure IframeAttrs where
+  src : String
+  title : Option String := none
+  width : Option String := none
+  height : Option String := none
+
+def IframeAttrs.render (a : IframeAttrs) : String :=
+  renderAttr "src" a.src ++ renderOpt "title" a.title ++ renderOpt "width" a.width ++
+    renderOpt "height" a.height
+
+#guard IframeAttrs.render { src := "/embed" } = " src=\"/embed\""
+#guard IframeAttrs.render { src := "/embed", title := "t", width := "300", height := "150" }
+  = " src=\"/embed\" title=\"t\" width=\"300\" height=\"150\""
+
+/-- Typed attributes for `<embed>`. -/
+structure EmbedAttrs where
+  src : Option String := none
+  type : Option String := none
+  width : Option String := none
+  height : Option String := none
+
+def EmbedAttrs.render (a : EmbedAttrs) : String :=
+  renderOpt "src" a.src ++ renderOpt "type" a.type ++ renderOpt "width" a.width ++
+    renderOpt "height" a.height
+
+#guard EmbedAttrs.render {} = ""
+#guard EmbedAttrs.render { src := "a.swf", type := "application/x-shockwave-flash" }
+  = " src=\"a.swf\" type=\"application/x-shockwave-flash\""
+
+/-- Typed attributes for `<object>`. -/
+structure ObjectAttrs where
+  data : Option String := none
+  type : Option String := none
+  width : Option String := none
+  height : Option String := none
+
+def ObjectAttrs.render (a : ObjectAttrs) : String :=
+  renderOpt "data" a.data ++ renderOpt "type" a.type ++ renderOpt "width" a.width ++
+    renderOpt "height" a.height
+
+#guard ObjectAttrs.render {} = ""
+#guard ObjectAttrs.render { data := "a.pdf", type := "application/pdf" }
+  = " data=\"a.pdf\" type=\"application/pdf\""
+
+/-- Typed attributes for `<video>`. -/
+structure VideoAttrs where
+  src : Option String := none
+  poster : Option String := none
+  controls : Bool := false
+  autoplay : Bool := false
+  loop : Bool := false
+  muted : Bool := false
+  width : Option String := none
+  height : Option String := none
+
+def VideoAttrs.render (a : VideoAttrs) : String :=
+  renderOpt "src" a.src ++ renderOpt "poster" a.poster ++ renderBoolAttr "controls" a.controls ++
+    renderBoolAttr "autoplay" a.autoplay ++ renderBoolAttr "loop" a.loop ++
+    renderBoolAttr "muted" a.muted ++ renderOpt "width" a.width ++ renderOpt "height" a.height
+
+#guard VideoAttrs.render {} = ""
+#guard VideoAttrs.render { src := "a.mp4", controls := true } = " src=\"a.mp4\" controls"
+
+/-- Typed attributes for `<audio>`. -/
+structure AudioAttrs where
+  src : Option String := none
+  controls : Bool := false
+  autoplay : Bool := false
+  loop : Bool := false
+  muted : Bool := false
+
+def AudioAttrs.render (a : AudioAttrs) : String :=
+  renderOpt "src" a.src ++ renderBoolAttr "controls" a.controls ++
+    renderBoolAttr "autoplay" a.autoplay ++ renderBoolAttr "loop" a.loop ++
+    renderBoolAttr "muted" a.muted
+
+#guard AudioAttrs.render {} = ""
+#guard AudioAttrs.render { src := "a.mp3", controls := true } = " src=\"a.mp3\" controls"
+
+/-- Typed attributes for `<map>`. `name` is required -- an image map
+without one can't be referenced by an `<img usemap="#...">`. -/
+structure MapAttrs where
+  name : String
+
+def MapAttrs.render (a : MapAttrs) : String :=
+  renderAttr "name" a.name
+
+#guard MapAttrs.render { name := "sitemap" } = " name=\"sitemap\""
+
+/-- Typed attributes for `<area>`. `alt` is required whenever `href` is
+present (real spec rule, not enforced here -- both stay independently
+optional, same simplification level as everywhere else in this file). -/
+structure AreaAttrs where
+  href : Option String := none
+  alt : Option String := none
+  shape : Option String := none
+  coords : Option String := none
+  target : Option String := none
+
+def AreaAttrs.render (a : AreaAttrs) : String :=
+  renderOpt "href" a.href ++ renderOpt "alt" a.alt ++ renderOpt "shape" a.shape ++
+    renderOpt "coords" a.coords ++ renderOpt "target" a.target
+
+#guard AreaAttrs.render {} = ""
+#guard AreaAttrs.render { href := "#a", alt := "Area A", shape := "rect", coords := "0,0,10,10" }
+  = " href=\"#a\" alt=\"Area A\" shape=\"rect\" coords=\"0,0,10,10\""
 
 #guard InputAttrs.render {} = " type=\"text\""
 #guard InputAttrs.render { disabled := true } = " type=\"text\" disabled"

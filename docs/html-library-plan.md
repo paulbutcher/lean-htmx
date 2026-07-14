@@ -627,6 +627,48 @@ String` anywhere accept a bare `String` silently.
       more useful; XHTML5 shares HTML5's content model exactly so buys
       nothing, and XHTML 1.x's cleaner DTD-based grammar targets a
       effectively dead format).
+- [x] **Full HTML5 element-set pass (2026-07-14).** Added every remaining
+      ordinary WHATWG HTML Living Standard element not in Phase 0's
+      original ~40 — text-level semantics (`i`/`b`/`u`/`s`/`mark`/`cite`/
+      `dfn`/`abbr`/`var`/`samp`/`kbd`/`sub`/`sup`/`bdi`/`bdo`/`ruby`/`rt`/
+      `rp`/`wbr`/`q`/`time`/`data`), sectioning/grouping (`aside`/`hgroup`/
+      `address`/`main`/`figure`/`figcaption`/`dl`/`dt`/`dd`/`menu`/
+      `search`), tabular (`caption`/`colgroup`/`col`/`tfoot`), forms
+      (`fieldset`/`legend`/`datalist`/`optgroup`/`output`/`progress`/
+      `meter`), interactive (`details`/`summary`/`dialog`), scripting/
+      metadata (`base`/`noscript`/`template`/`canvas`/`slot`), and embedded
+      content (`picture`/`source`/`track`/`iframe`/`embed`/`object`/
+      `video`/`audio`/`map`/`area`) — all in `Html/Tags.lean`, following
+      Phase 4's exact pattern (`Node.element`/`.elementOf`/`.voidElement` +
+      `combineAttrs`, one `#guard` smoke test per tag). Extended
+      `Html/Attrs.lean` with a typed `XAttrs` record for every element with
+      real element-specific attributes (not just globals) — ~20 new
+      records, same shape as `AAttrs`/`ImgAttrs`/`InputAttrs`, value-typed
+      fields staying plain `String` per 1.3 (no new numeric/URL types).
+      **Deliberately stayed within the existing flow/phrasing lattice** —
+      this item's own "broader Category lattice" checkbox stays unchecked;
+      this pass fills out the tag list, it doesn't add new categories.
+      **One real exception**: `ins`/`del` gained genuine category
+      polymorphism (`cat` left as a free, auto-bound implicit — the same
+      trick `Node.text`/`Node.unsafeRaw` already used) instead of a fixed
+      `.flow`/`.phrasing` choice, giving them real "whatever my parent
+      allows" transparent-content behavior within the 2-category lattice,
+      confirmed working both ways with a `#guard` composition test (inside
+      a `<p>` and inside a `<div>`, no manual type ascription needed
+      either way) — see `Html/Tags.lean`'s composition-tests section.
+      `<a>` has the same transparent-model property in the real spec but
+      was already implemented fixed-`.phrasing` in Phase 4; left as-is
+      here (out of this pass's scope). **Explicitly excluded**: SVG/MathML
+      (foreign-namespace content needs its own design decision, plausibly
+      its own `lean_lib` mirroring `Htmx` — not a same-shape tag addition)
+      and an inline-content `<style>` tag / inline-content `<script>`
+      variant (both stay excluded per Phase 0's original reasoning: raw-
+      text elements needing JS/CSS escaping, not HTML entity escaping —
+      `Html.script`'s existing external-`src` form is unaffected). Two new
+      keyword-clash renames, same convention as `class_`/`section_`:
+      `for_` (`<output>`'s `for` attribute) and `open_` (`<details>`/
+      `<dialog>`'s `open` attribute, sharing one `OpenAttrs` record since
+      both elements have the exact same single boolean field).
 
 ## 3. Test & proof strategy, summarized
 

@@ -61,6 +61,26 @@ def nav (children : List (Node .flow)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .flow :=
   Node.element .flow "nav" children (combineAttrs "" attrs rawAttrs)
 
+def aside (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "aside" children (combineAttrs "" attrs rawAttrs)
+
+def hgroup (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "hgroup" children (combineAttrs "" attrs rawAttrs)
+
+def address (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "address" children (combineAttrs "" attrs rawAttrs)
+
+def main (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "main" children (combineAttrs "" attrs rawAttrs)
+
+def search (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "search" children (combineAttrs "" attrs rawAttrs)
+
 -- Document metadata/structure: ordinary flow-content tags, but only ever
 -- meaningful as `Html.document`'s children (directly, or nested inside a
 -- `head`/`body` of its children) -- `document` itself no longer builds
@@ -90,11 +110,38 @@ def link (linkAttrs : LinkAttrs) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .flow :=
   Node.voidElement .flow "link" (combineAttrs (LinkAttrs.render linkAttrs) attrs rawAttrs)
 
+def base (baseAttrs : BaseAttrs := {}) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.voidElement .flow "base" (combineAttrs (BaseAttrs.render baseAttrs) attrs rawAttrs)
+
 -- Not a void element (unlike `link`): `<script src="...">` still needs a
 -- closing tag.
 def script (scriptAttrs : ScriptAttrs) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .flow :=
   Node.element .flow "script" [] (combineAttrs (ScriptAttrs.render scriptAttrs) attrs rawAttrs)
+
+-- Not a raw-text element like an inline `<script>`/`<style>` would be
+-- (explicitly out of scope, see docs/html-library-plan.md Phase 0):
+-- `noscript`'s content is ordinary flow-content fallback markup, not
+-- script/CSS text needing different escaping.
+def noscript (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "noscript" children (combineAttrs "" attrs rawAttrs)
+
+-- Only the static markup shape is modeled, not `<template>`'s real
+-- runtime semantics (inert content, `.content` fragment) -- same
+-- simplification level as every other container here.
+def template (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "template" children (combineAttrs "" attrs rawAttrs)
+
+def canvas (children : List (Node .flow)) (canvasAttrs : CanvasAttrs := {})
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "canvas" children (combineAttrs (CanvasAttrs.render canvasAttrs) attrs rawAttrs)
+
+def slot (children : List (Node .phrasing)) (slotAttrs : SlotAttrs := {})
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "slot" children (combineAttrs (SlotAttrs.render slotAttrs) attrs rawAttrs)
 
 -- Text: flow content, phrasing-only children (a `<div>` inside these is a
 -- type error, not just an HTML validity error).
@@ -140,9 +187,33 @@ def li (children : List (Node .flow)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .flow :=
   Node.element .flow "li" children (combineAttrs "" attrs rawAttrs)
 
+def menu (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "menu" children (combineAttrs "" attrs rawAttrs)
+
+def dl (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "dl" children (combineAttrs "" attrs rawAttrs)
+
+def dt (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "dt" children (combineAttrs "" attrs rawAttrs)
+
+def dd (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "dd" children (combineAttrs "" attrs rawAttrs)
+
 def blockquote (children : List (Node .flow)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .flow :=
   Node.element .flow "blockquote" children (combineAttrs "" attrs rawAttrs)
+
+def figure (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "figure" children (combineAttrs "" attrs rawAttrs)
+
+def figcaption (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "figcaption" children (combineAttrs "" attrs rawAttrs)
 
 -- `pre`: flow content, phrasing-only children (preformatted text).
 def pre (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
@@ -175,6 +246,110 @@ def span (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .phrasing :=
   Node.element .phrasing "span" children (combineAttrs "" attrs rawAttrs)
 
+def i (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "i" children (combineAttrs "" attrs rawAttrs)
+
+def b (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "b" children (combineAttrs "" attrs rawAttrs)
+
+def u (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "u" children (combineAttrs "" attrs rawAttrs)
+
+def s (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "s" children (combineAttrs "" attrs rawAttrs)
+
+def mark (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "mark" children (combineAttrs "" attrs rawAttrs)
+
+def cite (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "cite" children (combineAttrs "" attrs rawAttrs)
+
+def dfn (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "dfn" children (combineAttrs "" attrs rawAttrs)
+
+def abbr (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "abbr" children (combineAttrs "" attrs rawAttrs)
+
+def var (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "var" children (combineAttrs "" attrs rawAttrs)
+
+def samp (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "samp" children (combineAttrs "" attrs rawAttrs)
+
+def kbd (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "kbd" children (combineAttrs "" attrs rawAttrs)
+
+def sub (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "sub" children (combineAttrs "" attrs rawAttrs)
+
+def sup (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "sup" children (combineAttrs "" attrs rawAttrs)
+
+def bdi (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "bdi" children (combineAttrs "" attrs rawAttrs)
+
+def bdo (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "bdo" children (combineAttrs "" attrs rawAttrs)
+
+def ruby (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "ruby" children (combineAttrs "" attrs rawAttrs)
+
+def rt (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "rt" children (combineAttrs "" attrs rawAttrs)
+
+def rp (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "rp" children (combineAttrs "" attrs rawAttrs)
+
+def wbr (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.voidElement .phrasing "wbr" (combineAttrs "" attrs rawAttrs)
+
+def q (children : List (Node .phrasing)) (qAttrs : QAttrs := {}) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "q" children (combineAttrs (QAttrs.render qAttrs) attrs rawAttrs)
+
+def time (children : List (Node .phrasing)) (timeAttrs : TimeAttrs := {})
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "time" children (combineAttrs (TimeAttrs.render timeAttrs) attrs rawAttrs)
+
+def data (dataAttrs : DataAttrs) (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "data" children (combineAttrs (DataAttrs.render dataAttrs) attrs rawAttrs)
+
+/-- `ins`/`del` have HTML5's "transparent" content model: each takes on
+whatever category its surrounding context allows, rather than having a
+fixed category of its own (`docs/html-library-plan.md` 1.1). `cat` is left
+as a free, auto-bound implicit here -- exactly the same trick `Node.text`/
+`Node.unsafeRaw` already use -- instead of being pinned to `.flow` or
+`.phrasing` like every other tag above, since `Node.element`'s signature is
+already generic over its category. This makes `ins`/`del` usable directly
+inside a `<p>` (phrasing context) or a `<div>` (flow context) alike, with
+no manual type ascription needed at either call site. -/
+def ins (children : List (Node cat)) (insAttrs : InsDelAttrs := {}) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node cat :=
+  Node.element cat "ins" children (combineAttrs (InsDelAttrs.render insAttrs) attrs rawAttrs)
+
+def del (children : List (Node cat)) (insAttrs : InsDelAttrs := {}) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node cat :=
+  Node.element cat "del" children (combineAttrs (InsDelAttrs.render insAttrs) attrs rawAttrs)
+
 def br (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .phrasing :=
   Node.voidElement .phrasing "br" (combineAttrs "" attrs rawAttrs)
 
@@ -182,6 +357,14 @@ def br (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : No
 def form (children : List (Node .flow)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .flow :=
   Node.element .flow "form" children (combineAttrs "" attrs rawAttrs)
+
+def fieldset (children : List (Node .flow)) (fieldsetAttrs : FieldsetAttrs := {})
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "fieldset" children (combineAttrs (FieldsetAttrs.render fieldsetAttrs) attrs rawAttrs)
+
+def legend (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.elementOf .flow .phrasing "legend" children (combineAttrs "" attrs rawAttrs)
 
 def input (inputAttrs : InputAttrs := {}) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .phrasing :=
@@ -204,9 +387,43 @@ def select (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .phrasing :=
   Node.element .phrasing "select" children (combineAttrs "" attrs rawAttrs)
 
+def datalist (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "datalist" children (combineAttrs "" attrs rawAttrs)
+
+def optgroup (optgroupAttrs : OptgroupAttrs) (children : List (Node .phrasing))
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "optgroup" children (combineAttrs (OptgroupAttrs.render optgroupAttrs) attrs rawAttrs)
+
 def button (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .phrasing :=
   Node.element .phrasing "button" children (combineAttrs "" attrs rawAttrs)
+
+def output (children : List (Node .phrasing)) (outputAttrs : OutputAttrs := {})
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "output" children (combineAttrs (OutputAttrs.render outputAttrs) attrs rawAttrs)
+
+def progress (children : List (Node .phrasing)) (progressAttrs : ProgressAttrs := {})
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "progress" children (combineAttrs (ProgressAttrs.render progressAttrs) attrs rawAttrs)
+
+def meter (children : List (Node .phrasing)) (meterAttrs : MeterAttrs := {})
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "meter" children (combineAttrs (MeterAttrs.render meterAttrs) attrs rawAttrs)
+
+-- Interactive elements: flow content, flow children, except `summary`
+-- (flow content, phrasing-only children, like `p`/`legend`).
+def details (children : List (Node .flow)) (openAttrs : OpenAttrs := {}) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "details" children (combineAttrs (OpenAttrs.render openAttrs) attrs rawAttrs)
+
+def summary (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.elementOf .flow .phrasing "summary" children (combineAttrs "" attrs rawAttrs)
+
+def dialog (children : List (Node .flow)) (openAttrs : OpenAttrs := {}) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "dialog" children (combineAttrs (OpenAttrs.render openAttrs) attrs rawAttrs)
 
 -- Media/void.
 def img (imgAttrs : ImgAttrs) (attrs : HtmlAttrs := {})
@@ -216,11 +433,67 @@ def img (imgAttrs : ImgAttrs) (attrs : HtmlAttrs := {})
 def hr (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .flow :=
   Node.voidElement .flow "hr" (combineAttrs "" attrs rawAttrs)
 
+-- Embedded content: flow content, flow children, holding `source`/`track`
+-- void children (also flow, for use inside them) alongside fallback
+-- markup -- same "container accepts general flow children" simplification
+-- as `ul`/`ol`/`table` (module doc above).
+def picture (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "picture" children (combineAttrs "" attrs rawAttrs)
+
+def source (sourceAttrs : SourceAttrs := {}) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.voidElement .flow "source" (combineAttrs (SourceAttrs.render sourceAttrs) attrs rawAttrs)
+
+def track (trackAttrs : TrackAttrs) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.voidElement .flow "track" (combineAttrs (TrackAttrs.render trackAttrs) attrs rawAttrs)
+
+def iframe (iframeAttrs : IframeAttrs) (children : List (Node .flow) := [])
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "iframe" children (combineAttrs (IframeAttrs.render iframeAttrs) attrs rawAttrs)
+
+def embed (embedAttrs : EmbedAttrs := {}) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.voidElement .flow "embed" (combineAttrs (EmbedAttrs.render embedAttrs) attrs rawAttrs)
+
+def object (objectAttrs : ObjectAttrs := {}) (children : List (Node .flow) := [])
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "object" children (combineAttrs (ObjectAttrs.render objectAttrs) attrs rawAttrs)
+
+def video (children : List (Node .flow) := []) (videoAttrs : VideoAttrs := {})
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "video" children (combineAttrs (VideoAttrs.render videoAttrs) attrs rawAttrs)
+
+def audio (children : List (Node .flow) := []) (audioAttrs : AudioAttrs := {})
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "audio" children (combineAttrs (AudioAttrs.render audioAttrs) attrs rawAttrs)
+
+def map (mapAttrs : MapAttrs) (children : List (Node .flow) := [])
+    (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "map" children (combineAttrs (MapAttrs.render mapAttrs) attrs rawAttrs)
+
+def area (areaAttrs : AreaAttrs := {}) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.voidElement .flow "area" (combineAttrs (AreaAttrs.render areaAttrs) attrs rawAttrs)
+
 -- Table: flow content, flow children (see module-doc note on not
 -- enforcing HTML5's stricter table content model).
 def table (children : List (Node .flow)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .flow :=
   Node.element .flow "table" children (combineAttrs "" attrs rawAttrs)
+
+def caption (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "caption" children (combineAttrs "" attrs rawAttrs)
+
+def colgroup (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "colgroup" children (combineAttrs "" attrs rawAttrs)
+
+def col (colAttrs : ColAttrs := {}) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.voidElement .flow "col" (combineAttrs (ColAttrs.render colAttrs) attrs rawAttrs)
 
 def thead (children : List (Node .flow)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .flow :=
@@ -229,6 +502,10 @@ def thead (children : List (Node .flow)) (attrs : HtmlAttrs := {})
 def tbody (children : List (Node .flow)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .flow :=
   Node.element .flow "tbody" children (combineAttrs "" attrs rawAttrs)
+
+def tfoot (children : List (Node .flow)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .flow :=
+  Node.element .flow "tfoot" children (combineAttrs "" attrs rawAttrs)
 
 def tr (children : List (Node .flow)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .flow :=
@@ -249,6 +526,11 @@ def td (children : List (Node .flow)) (attrs : HtmlAttrs := {})
 #guard Node.render (header []) = "<header></header>"
 #guard Node.render (footer []) = "<footer></footer>"
 #guard Node.render (nav []) = "<nav></nav>"
+#guard Node.render (aside []) = "<aside></aside>"
+#guard Node.render (hgroup []) = "<hgroup></hgroup>"
+#guard Node.render (address []) = "<address></address>"
+#guard Node.render (main []) = "<main></main>"
+#guard Node.render (search []) = "<search></search>"
 #guard Node.render (p []) = "<p></p>"
 #guard Node.render (h1 []) = "<h1></h1>"
 #guard Node.render (h2 []) = "<h2></h2>"
@@ -259,25 +541,111 @@ def td (children : List (Node .flow)) (attrs : HtmlAttrs := {})
 #guard Node.render (ul []) = "<ul></ul>"
 #guard Node.render (ol []) = "<ol></ol>"
 #guard Node.render (li []) = "<li></li>"
+#guard Node.render (menu []) = "<menu></menu>"
+#guard Node.render (dl []) = "<dl></dl>"
+#guard Node.render (dt []) = "<dt></dt>"
+#guard Node.render (dd []) = "<dd></dd>"
 #guard Node.render (blockquote []) = "<blockquote></blockquote>"
+#guard Node.render (figure []) = "<figure></figure>"
+#guard Node.render (figcaption []) = "<figcaption></figcaption>"
 #guard Node.render (pre []) = "<pre></pre>"
 #guard Node.render (code []) = "<code></code>"
+#guard Node.render (base) = "<base>"
+#guard Node.render (base { href := "/", target := "_blank" }) = "<base href=\"/\" target=\"_blank\">"
+#guard Node.render (noscript []) = "<noscript></noscript>"
+#guard Node.render (template []) = "<template></template>"
+#guard Node.render (canvas []) = "<canvas></canvas>"
+#guard Node.render (canvas [] { width := "300", height := "150" })
+  = "<canvas width=\"300\" height=\"150\"></canvas>"
+#guard Node.render (slot []) = "<slot></slot>"
+#guard Node.render (slot [] { name := "header" }) = "<slot name=\"header\"></slot>"
 #guard Node.render (a { href := "x" } []) = "<a href=\"x\"></a>"
 #guard Node.render (strong []) = "<strong></strong>"
 #guard Node.render (em []) = "<em></em>"
 #guard Node.render (small []) = "<small></small>"
 #guard Node.render (span []) = "<span></span>"
+#guard Node.render (i []) = "<i></i>"
+#guard Node.render (b []) = "<b></b>"
+#guard Node.render (u []) = "<u></u>"
+#guard Node.render (s []) = "<s></s>"
+#guard Node.render (mark []) = "<mark></mark>"
+#guard Node.render (cite []) = "<cite></cite>"
+#guard Node.render (dfn []) = "<dfn></dfn>"
+#guard Node.render (abbr []) = "<abbr></abbr>"
+#guard Node.render (var []) = "<var></var>"
+#guard Node.render (samp []) = "<samp></samp>"
+#guard Node.render (kbd []) = "<kbd></kbd>"
+#guard Node.render (sub []) = "<sub></sub>"
+#guard Node.render (sup []) = "<sup></sup>"
+#guard Node.render (bdi []) = "<bdi></bdi>"
+#guard Node.render (bdo []) = "<bdo></bdo>"
+#guard Node.render (ruby []) = "<ruby></ruby>"
+#guard Node.render (rt []) = "<rt></rt>"
+#guard Node.render (rp []) = "<rp></rp>"
+#guard Node.render (wbr) = "<wbr>"
+#guard Node.render (q []) = "<q></q>"
+#guard Node.render (q [] { cite := "https://example.com" })
+  = "<q cite=\"https://example.com\"></q>"
+#guard Node.render (time []) = "<time></time>"
+#guard Node.render (time [] { datetime := "2026-07-14" })
+  = "<time datetime=\"2026-07-14\"></time>"
+#guard Node.render (data { value := "42" } []) = "<data value=\"42\"></data>"
+#guard Node.render (ins (cat := .flow) []) = "<ins></ins>"
+#guard Node.render (del (cat := .phrasing) []) = "<del></del>"
 #guard Node.render (br) = "<br>"
 #guard Node.render (form []) = "<form></form>"
+#guard Node.render (fieldset []) = "<fieldset></fieldset>"
+#guard Node.render (fieldset [] { disabled := true }) = "<fieldset disabled></fieldset>"
+#guard Node.render (legend []) = "<legend></legend>"
 #guard Node.render (input) = "<input type=\"text\">"
 #guard Node.render (label []) = "<label></label>"
 #guard Node.render (textarea "hi") = "<textarea>hi</textarea>"
 #guard Node.render (option "hi") = "<option>hi</option>"
 #guard Node.render (select []) = "<select></select>"
+#guard Node.render (datalist []) = "<datalist></datalist>"
+#guard Node.render (optgroup { label := "Fruit" } []) = "<optgroup label=\"Fruit\"></optgroup>"
 #guard Node.render (button []) = "<button></button>"
+#guard Node.render (output []) = "<output></output>"
+#guard Node.render (output [] { for_ := "a b", name := "result" })
+  = "<output for=\"a b\" name=\"result\"></output>"
+#guard Node.render (progress []) = "<progress></progress>"
+#guard Node.render (progress [] { value := "50", max := "100" })
+  = "<progress value=\"50\" max=\"100\"></progress>"
+#guard Node.render (meter []) = "<meter></meter>"
+#guard Node.render (meter [] { value := "6", min := "0", max := "10" })
+  = "<meter value=\"6\" min=\"0\" max=\"10\"></meter>"
+#guard Node.render (details []) = "<details></details>"
+#guard Node.render (details [] { open_ := true }) = "<details open></details>"
+#guard Node.render (summary []) = "<summary></summary>"
+#guard Node.render (dialog []) = "<dialog></dialog>"
+#guard Node.render (dialog [] { open_ := true }) = "<dialog open></dialog>"
 #guard Node.render (img { src := "a.png", alt := "d" }) = "<img src=\"a.png\" alt=\"d\">"
 #guard Node.render (hr) = "<hr>"
+#guard Node.render (picture []) = "<picture></picture>"
+#guard Node.render (source) = "<source>"
+#guard Node.render (source { src := "a.mp4", type := "video/mp4" })
+  = "<source src=\"a.mp4\" type=\"video/mp4\">"
+#guard Node.render (track { src := "a.vtt" }) = "<track src=\"a.vtt\">"
+#guard Node.render (iframe { src := "/embed" }) = "<iframe src=\"/embed\"></iframe>"
+#guard Node.render (embed) = "<embed>"
+#guard Node.render (embed { src := "a.swf" }) = "<embed src=\"a.swf\">"
+#guard Node.render (object) = "<object></object>"
+#guard Node.render (object { data := "a.pdf" }) = "<object data=\"a.pdf\"></object>"
+#guard Node.render (video) = "<video></video>"
+#guard Node.render (video (videoAttrs := { src := "a.mp4", controls := true }))
+  = "<video src=\"a.mp4\" controls></video>"
+#guard Node.render (audio) = "<audio></audio>"
+#guard Node.render (audio (audioAttrs := { src := "a.mp3", controls := true }))
+  = "<audio src=\"a.mp3\" controls></audio>"
+#guard Node.render (map { name := "sitemap" }) = "<map name=\"sitemap\"></map>"
+#guard Node.render (area) = "<area>"
+#guard Node.render (area { href := "#a", alt := "Area A" }) = "<area href=\"#a\" alt=\"Area A\">"
 #guard Node.render (table []) = "<table></table>"
+#guard Node.render (caption []) = "<caption></caption>"
+#guard Node.render (colgroup []) = "<colgroup></colgroup>"
+#guard Node.render (col) = "<col>"
+#guard Node.render (col { span := "2" }) = "<col span=\"2\">"
+#guard Node.render (tfoot []) = "<tfoot></tfoot>"
 #guard Node.render (thead []) = "<thead></thead>"
 #guard Node.render (tbody []) = "<tbody></tbody>"
 #guard Node.render (tr []) = "<tr></tr>"
@@ -334,5 +702,15 @@ example : Node .flow := p [div []]
   = "<div id=\"x\" class=\"y\"></div>"
 #guard Node.render (a (linkAttrs := { href := "/x", target := "_blank" }) [Node.text "go"])
   = "<a href=\"/x\" target=\"_blank\">go</a>"
+
+-- `ins`/`del`'s transparent content model (see their doc comment): the
+-- *same* definitions resolve to a phrasing element directly inside a `<p>`
+-- and to a flow element directly inside a `<div>`, with no manual type
+-- ascription at either call site -- `cat` is inferred from context both
+-- ways.
+#guard Node.render (p [Node.text "Some ", del ["old"], Node.text " ", ins ["new"], Node.text " text"])
+  = "<p>Some <del>old</del> <ins>new</ins> text</p>"
+#guard Node.render (div [ins [p ["whole paragraph added"]]])
+  = "<div><ins><p>whole paragraph added</p></ins></div>"
 
 end Html
