@@ -171,6 +171,10 @@ def small (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Node .phrasing :=
   Node.element .phrasing "small" children (combineAttrs "" attrs rawAttrs)
 
+def span (children : List (Node .phrasing)) (attrs : HtmlAttrs := {})
+    (rawAttrs : List (String × String) := []) : Node .phrasing :=
+  Node.element .phrasing "span" children (combineAttrs "" attrs rawAttrs)
+
 def br (attrs : HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Node .phrasing :=
   Node.voidElement .phrasing "br" (combineAttrs "" attrs rawAttrs)
 
@@ -262,6 +266,7 @@ def td (children : List (Node .flow)) (attrs : HtmlAttrs := {})
 #guard Node.render (strong []) = "<strong></strong>"
 #guard Node.render (em []) = "<em></em>"
 #guard Node.render (small []) = "<small></small>"
+#guard Node.render (span []) = "<span></span>"
 #guard Node.render (br) = "<br>"
 #guard Node.render (form []) = "<form></form>"
 #guard Node.render (input) = "<input type=\"text\">"

@@ -47,11 +47,11 @@ private def sampleItemUnsafe : Item := { id := 3, title := "<b>x</b> & \"y\"", c
 -- Pluralization boundary (0/1/N) and the clear-completed button's presence
 -- exactly tracking whether there's a completed item to clear.
 #guard Node.render (footerFragment #[] .all) =
-  "<footer id=\"todo-footer\" class=\"footer\" hx-swap-oob=\"true\"><p class=\"todo-count\" style=\"margin: 0\">0 items left</p><ul class=\"filters\"><li><a href=\"/\" class=\"selected\">All</a></li><li><a href=\"/active\">Active</a></li><li><a href=\"/completed\">Completed</a></li></ul></footer>"
+  "<footer id=\"todo-footer\" class=\"footer\" hx-swap-oob=\"true\"><span class=\"todo-count\">0 items left</span><ul class=\"filters\"><li><a href=\"/\" class=\"selected\">All</a></li><li><a href=\"/active\">Active</a></li><li><a href=\"/completed\">Completed</a></li></ul></footer>"
 #guard Node.render (footerFragment #[sampleItem] .active) =
-  "<footer id=\"todo-footer\" class=\"footer\" hx-swap-oob=\"true\"><p class=\"todo-count\" style=\"margin: 0\">1 item left</p><ul class=\"filters\"><li><a href=\"/\">All</a></li><li><a href=\"/active\" class=\"selected\">Active</a></li><li><a href=\"/completed\">Completed</a></li></ul></footer>"
+  "<footer id=\"todo-footer\" class=\"footer\" hx-swap-oob=\"true\"><span class=\"todo-count\">1 item left</span><ul class=\"filters\"><li><a href=\"/\">All</a></li><li><a href=\"/active\" class=\"selected\">Active</a></li><li><a href=\"/completed\">Completed</a></li></ul></footer>"
 #guard Node.render (footerFragment #[sampleItem, sampleItemDone] .all) =
-  "<footer id=\"todo-footer\" class=\"footer\" hx-swap-oob=\"true\"><p class=\"todo-count\" style=\"margin: 0\">1 item left</p><ul class=\"filters\"><li><a href=\"/\" class=\"selected\">All</a></li><li><a href=\"/active\">Active</a></li><li><a href=\"/completed\">Completed</a></li></ul><button class=\"clear-completed\" hx-delete=\"/todos/completed\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\">Clear completed</button></footer>"
+  "<footer id=\"todo-footer\" class=\"footer\" hx-swap-oob=\"true\"><span class=\"todo-count\">1 item left</span><ul class=\"filters\"><li><a href=\"/\" class=\"selected\">All</a></li><li><a href=\"/active\">Active</a></li><li><a href=\"/completed\">Completed</a></li></ul><button class=\"clear-completed\" hx-delete=\"/todos/completed\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\">Clear completed</button></footer>"
 
 -- `Filter.path`/`filterFromPath` round-trip for all three filters, plus
 -- `filterFromPath`'s `endsWith`-on-a-full-URL behaviour (htmx's
