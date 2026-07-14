@@ -83,6 +83,6 @@ def routes (db : SQLite) : List (Route Result) :=
 def main : IO Unit := Async.block do
   let db ← SQLite.open ":memory:"
   Todo.initSchema db
-  let addr := ⟨.ofParts 127 0 0 1, 2000⟩ |> .v4
-  let handler := db |> routes |> toHandler
+  let addr := .v4 ⟨.ofParts 127 0 0 1, 2000⟩
+  let handler := routes db |> toHandler
   serve addr handler >>= waitShutdown
