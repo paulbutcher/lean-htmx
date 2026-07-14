@@ -69,16 +69,16 @@ def clearCompletedHandler (db : SQLite) (req : Request Body.Stream) :
   renderMutation db req
 
 def routes (db : SQLite) : List (Route Result) :=
-  [ .get "/" ∘ pageHandler .all,
-    .get "/active" ∘ pageHandler .active,
-    .get "/completed" ∘ pageHandler .completed,
-    .post "/todos" ∘ addHandler,
-    .get "/todos/:id:Nat/edit" ∘ editHandler,
-    .put "/todos/:id:Nat" ∘ saveHandler,
-    .post "/todos/:id:Nat/toggle" ∘ toggleHandler,
-    .delete "/todos/:id:Nat" ∘ deleteHandler,
-    .post "/todos/toggle-all" ∘ toggleAllHandler,
-    .delete "/todos/completed" ∘ clearCompletedHandler ].map (· db)
+  [ .get Todo.indexPattern ∘ pageHandler .all,
+    .get Todo.activePattern ∘ pageHandler .active,
+    .get Todo.completedPattern ∘ pageHandler .completed,
+    .post Todo.todosPattern ∘ addHandler,
+    .get Todo.todoEditPattern ∘ editHandler,
+    .put Todo.todoPattern ∘ saveHandler,
+    .post Todo.todoTogglePattern ∘ toggleHandler,
+    .delete Todo.todoPattern ∘ deleteHandler,
+    .post Todo.toggleAllPattern ∘ toggleAllHandler,
+    .delete Todo.clearCompletedPattern ∘ clearCompletedHandler ].map (· db)
 
 def main : IO Unit := Async.block do
   let db ← SQLite.open ":memory:"
