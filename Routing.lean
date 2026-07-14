@@ -3,6 +3,7 @@ import Routing.Handler
 import Routing.Route
 import Routing.Server
 import Routing.Url
+import Routing.Application
 
 /-!
 # `Routing`: a typed HTTP path router
@@ -83,11 +84,36 @@ counterpart is `Url.lean`'s `badUrlArity`).
 
 ## How to add a route
 
-Call `route method pattern handler` (`Routing/Route.lean`) with a pattern
-string and a handler whose argument types match each `:name:Kind` capture
-in order (`Nat` for `:Nat`, `String` for `:String`), then add it to the
-`List (Route Result)` passed to `toHandler` (`Routing/Server.lean`). If
-the same URL is needed elsewhere (a link, an `hx-*` attribute), pass the
-same pattern string to `routeUrl` (`Routing/Url.lean`) instead of
-hand-building it, so the two can never drift apart.
+Add a node to an `application` block (`Routing/Application.lean`,
+`docs/application-macro-plan.md`) -- a route-tree command macro that reads as
+nested pattern fragments with inline `method => handler` entries and produces
+one `Application` value bundling the dispatch handler with a generated
+reverse-routing `Urls` struct, so a pattern is written exactly once regardless
+of how many methods or nested sub-paths share it:
+
+```
+application app : SQLite where
+  "/" as index { get => pageHandler .all }
+  "/todos" as todos {
+    post => addHandler
+    "/:id:Nat" as todo { put => saveHandler }
+  }
+```
+
+`app.urls.todo 7 = "/todos/7"`; `app.handler db` is a `StatelessHandler` ready
+for `serve`. See `Main.lean` for a complete, real example, including the
+`deriving <ClassName>` clause that lets a library upstream of the file
+`application` is invoked in (which can't reference the struct `application`
+is about to generate) depend on an abstract typeclass instead
+(`docs/application-macro-plan.md`'s Phase 3 notes; `Todo/Urls.lean`).
+
+`route`/`Route.get`/`.post`/`.put`/`.delete` (`Routing/Route.lean`) and
+`routeUrl` (`Routing/Url.lean`) are what `application` expands to, not the
+recommended top-level API -- call them directly only outside an `application`
+block (e.g. a one-off route table with no reverse-routing needs). A pattern
+string and a handler whose argument types match each `:name:Kind` capture in
+order (`Nat` for `:Nat`, `String` for `:String`) build a `Route`, added to the
+`List (Route Result)` `toHandler` (`Routing/Server.lean`) expects; the same
+pattern string passed to `routeUrl` builds the matching URL, so the two can
+never drift apart.
 -/

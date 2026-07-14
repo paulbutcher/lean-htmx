@@ -264,11 +264,11 @@ fix this checklist to match rather than silently deviating.
 
 ### Phase 0 — recover and read the prior art
 
-- [ ] `git show a8a3cdc^:Routing/RoutesMacro.lean` and read it in full — this is the nested-grammar
+- [x] `git show a8a3cdc^:Routing/RoutesMacro.lean` and read it in full — this is the nested-grammar
       parsing/hygiene machinery (§4) that this phase adapts, not reinvents. Save a local copy to
       refer back to while writing the new file; don't restore it into the tree as-is (it's built
       around a hand-declared `Urls` and a curried `db`, both superseded by §1-§3).
-- [ ] Also skim `git show 6ed4572:docs/reverse-routing-macro-plan.md` for the grammar-alternatives
+- [x] Also skim `git show 6ed4572:docs/reverse-routing-macro-plan.md` for the grammar-alternatives
       reasoning (§2-§3 there) if any of §4's "why" isn't clear from this doc alone.
 
 ### Phase 1 — spike the new part in isolation before committing to the full grammar
@@ -277,13 +277,13 @@ Goal: confirm a command macro can splice a `structure` command and a `def` comma
 one expansion, with the struct's field types computed from `List PathSeg` directly (§5), before
 building the full nested-fragment grammar around it. Do this against a toy example, not `Todo`.
 
-- [ ] New file `Routing/Application.lean`. Define `structure Application (Ctx Urls : Type) where
+- [x] New file `Routing/Application.lean`. Define `structure Application (Ctx Urls : Type) where
       urls : Urls; handler : Ctx → StatelessHandler`.
-- [ ] In the same file (or a scratch namespace within it), hand-write — no macro yet — the
+- [x] In the same file (or a scratch namespace within it), hand-write — no macro yet — the
       *expansion* a two-route toy example should produce (mirroring §3's worked example at small
       scale: one `as`-named leaf, one capturing `as`-named leaf), to confirm the target shape
       type-checks at all before automating its generation.
-- [ ] Write the `List PathSeg → CommandElabM (TSyntax `term)` field-type helper described in §5.
+- [x] Write the `List PathSeg → CommandElabM (TSyntax `term)` field-type helper described in §5.
       Confirm with a throwaway `#eval`/`elabCommand` test that it produces `Nat → String` (not
       `UrlType (parsePattern! ...)`) for a two-capture pattern, and that a struct field declared
       with the emitted syntax is usable in an ordinary `#guard` equality check with no instance-
@@ -294,7 +294,7 @@ building the full nested-fragment grammar around it. Do this against a toy examp
       (bind each result to its own top-level `def` before comparing — see `rootUrl`/`todosUrl`
       there) applied to every downstream consumer of the generated struct, which is worth knowing
       about now rather than after Phase 2 is built on the assumption it's unnecessary.
-- [ ] Confirm `elabCommand` can splice a `structure ... where ...` command the same way the
+- [x] Confirm `elabCommand` can splice a `structure ... where ...` command the same way the
       reverted spike spliced `def`s (a distinct code path from anything already proven — verify it
       directly, don't assume it generalizes).
 
@@ -303,25 +303,25 @@ building the full nested-fragment grammar around it. Do this against a toy examp
 Mirrors the reverted spike's own test section (`namespace PositiveTest` etc.) — reuse that
 structure, adapted for the new surface syntax and generated-struct output.
 
-- [ ] Port the `routeItem` syntax categories and `manyIndent`-based grammar from
+- [x] Port the `routeItem` syntax categories and `manyIndent`-based grammar from
       `Routing/RoutesMacro.lean` (§4) into `Routing/Application.lean`, adjusted for the
       `application <name> : <CtxType> where <items>` surface (§2) instead of `routes! (db :
       <dbTy>) : <urlsTy> where`.
-- [ ] Implement the tree walk: thread resolved `List PathSeg` down through nested fragments
+- [x] Implement the tree walk: thread resolved `List PathSeg` down through nested fragments
       (`processItems` in the old file is the template), collecting every `method => handler` entry
       (with resolved segs) and every `as`-named node (with resolved segs), exactly as before.
-- [ ] Port the tree-wide duplicate-name check unchanged (§4). Port the duplicate-pattern check
+- [x] Port the tree-wide duplicate-name check unchanged (§4). Port the duplicate-pattern check
       *with* the name-erasure fix (§4/§5) — compare patterns with capture names blanked out, never
       the raw `List PathSeg`.
-- [ ] Generate the `structure <Name>Urls where ...` command from the named nodes, using Phase 1's
+- [x] Generate the `structure <Name>Urls where ...` command from the named nodes, using Phase 1's
       field-type helper — one field per `as`-named node, field name = the `as` identifier, field
       type computed from that node's resolved segs.
-  - [ ] Generate the `def <name> : Application <CtxType> <Name>Urls := ...` command per §3's shape
+  - [x] Generate the `def <name> : Application <CtxType> <Name>Urls := ...` command per §3's shape
         — a `let urls := { ... }` (one entry per named node, value = `routeUrl "<resolved
         pattern>"`), then `{ urls := urls, handler := fun (ctx : <CtxType>) => toHandler [ ... ] }`
         with one list element per method entry, each applying its handler term to `ctx urls` before
         `Route.get`/`.post`/`.put`/`.delete` sees it (§5's ordering decision).
-- [ ] Port the positive regression (2-3 levels of nesting, a captured node with two methods sharing
+- [x] Port the positive regression (2-3 levels of nesting, a captured node with two methods sharing
       one written pattern, a same-arity literal/capture collision exercised through the macro's
       actual flattened `dispatchTable` output) — adapt method/handler signatures to the new
       `ctx → urls → captures → req` shape. **Extend it** with a case the reverted spike never
@@ -329,19 +329,19 @@ structure, adapted for the new surface syntax and generated-struct output.
       (e.g. `"/todos" as todos { post => addHandler; "/:id:Nat" as todo { ... } }`) — this is
       exactly the shape the real Todo migration (Phase 3) depends on. Neither `PositiveTest`'s
       `item` node (method, no children) nor its `/items` node (children, no `as`/method) covers it.
-- [ ] Add a positive regression with two `application` blocks in the *same* namespace (different
+- [x] Add a positive regression with two `application` blocks in the *same* namespace (different
       binder names, e.g. `app1`/`app2`), each generating its own `<Name>Urls` struct and `def`.
       This is the direct check of §5's claim that deriving generated names from the binder — rather
       than the reverted spike's fixed `urls`/`routes` idents — removes the multi-block collision
       the old version needed per-test `namespace` isolation to avoid. The reverted spike never
       tested this because it wasn't fixed there; confirm it by direct compilation rather than
       assuming the fix works.
-- [ ] Add two small edge-case checks the worked example doesn't exercise: an `application` block
+- [x] Add two small edge-case checks the worked example doesn't exercise: an `application` block
       with zero `as`-named nodes (generated `structure` has no fields — confirm the empty anonymous
       constructor splice `{ }` elaborates) and one with zero method entries anywhere (generated
       `toHandler [...]` list is empty). Neither should error; both are cheap and untested by
       everything above.
-- [ ] Port five negative regressions as `#guard_msgs`: wrong-arity handler, malformed fragment
+- [x] Port five negative regressions as `#guard_msgs`: wrong-arity handler, malformed fragment
       text, duplicate `as` name, two names resolving to the same pattern (same literal/capture-kind
       shape), and — new, not present in the reverted spike — two names resolving to the same shape
       via *different capture variable names* (e.g. `/items/:id:Nat` as `item` vs `/items/:pk:Nat` as
@@ -349,7 +349,7 @@ structure, adapted for the new surface syntax and generated-struct output.
       equality misses. Confirm the wrong-arity error still points at the actual handler/line, not an
       opaque expansion dump (§4's "confirmed error quality" — re-confirm for the new shape, don't
       assume it carries over unchanged just because the old one worked).
-- [ ] `lean_diagnostic_messages` on the file, then `lake build`, before moving to Phase 3.
+- [x] `lean_diagnostic_messages` on the file, then `lake build`, before moving to Phase 3.
 
 ### Phase 3 — migrate the Todo app
 
@@ -357,30 +357,30 @@ This is the same shape of refactor `docs/reverse-routing-macro-plan.md` §6.3 al
 the old design (per-view-function URL threading) — re-derive the call-site list from the *current*
 `Todo/Views.lean`, don't assume it still matches that doc's table (files have moved since).
 
-- [ ] Read `Todo/Views.lean`, `Todo/Routes.lean`, and `Main.lean` fresh (current state, not the old
+- [x] Read `Todo/Views.lean`, `Todo/Routes.lean`, and `Main.lean` fresh (current state, not the old
       plan's snapshot of them) and enumerate every function that reads a `Todo.*Url`
       constant/`Todo.*Pattern` constant.
-- [ ] Add a parameter for the generated `Urls` type to every one of those functions (name it
+- [x] Add a parameter for the generated `Urls` type to every one of those functions (name it
       `urls`, threaded the same way `db` already is), replacing each `Todo.*Url` reference with
       `urls.<field>`.
-- [ ] Rewrite every handler in `Main.lean` (`pageHandler`, `addHandler`, `editHandler`,
+- [x] Rewrite every handler in `Main.lean` (`pageHandler`, `addHandler`, `editHandler`,
       `saveHandler`, `toggleHandler`, `deleteHandler`, `toggleAllHandler`,
       `clearCompletedHandler`) to take `(ctx : SQLite) (urls : AppUrls)` as its first two curried
       arguments (order per §5), instead of just `db`.
-- [ ] Replace `Main.lean`'s `routes`/`def routes (db : SQLite) := [...]` list with one
+- [x] Replace `Main.lean`'s `routes`/`def routes (db : SQLite) := [...]` list with one
       `application app : SQLite where <tree>` block using this app's real patterns (the tree in
       §1/§3's worked example, adjusted to match whatever this app's *current* patterns actually are
       — check `Todo/Routes.lean` for the current literal strings, e.g. confirm whether it's
       `/todos/completed` or `/todos/clear-completed` before transcribing the tree; don't trust this
       doc's example strings over the actual source).
-- [ ] Rewire `main` to `serve addr (app.handler db) >>= waitShutdown` (§1) instead of `routes db |>
+- [x] Rewire `main` to `serve addr (app.handler db) >>= waitShutdown` (§1) instead of `routes db |>
       toHandler`.
-- [ ] Delete `Todo/Routes.lean`'s hand-written `*Pattern`/`*Url` constants once nothing references
+- [x] Delete `Todo/Routes.lean`'s hand-written `*Pattern`/`*Url` constants once nothing references
       them.
-- [ ] Update every `TodoTests/Views.lean` call site that currently calls a view function without a
+- [x] Update every `TodoTests/Views.lean` call site that currently calls a view function without a
       `urls` argument — pass `app.urls` (or a local equivalent built the same way, if `Main` isn't
       importable from `TodoTests` — check the current import graph before assuming either way).
-- [ ] Add a direct regression against the *real* generated `app`, not just the toy harness from
+- [x] Add a direct regression against the *real* generated `app`, not just the toy harness from
       Phase 2 — e.g. `#guard app.urls.todo 7 = "/todos/7"` (the concrete claim §1 makes) plus one
       `dispatchTable`-level `#guard` exercising the real flattened route list (mirroring
       `PositiveTest`'s `dispatchTable (routes 0) ...` checks, but against `app`'s actual handler
@@ -389,19 +389,52 @@ the old design (per-view-function URL threading) — re-derive the call-site lis
       test` passing would not, by itself, catch a transcribed-wrong pattern string (e.g. the
       `/todos/completed` vs `/todos/clear-completed` risk this phase already flags above) as long
       as the same wrong string were used consistently on both the route and the `Urls` side.
-- [ ] `lean_build` (imports changed), then `lake build`, then `lake test` (or whatever this repo's
+- [x] `lean_build` (imports changed), then `lake build`, then `lake test` (or whatever this repo's
       current test-running command is — check `lakefile.toml`/README rather than assuming `lake
       test` still applies) — all three must pass before considering this phase done.
 
+**A real problem this doc didn't foresee, found during implementation, and its resolution.**
+`Todo/Views.lean` sits upstream of `Main.lean` in the import graph (`Main` imports `Todo`), but
+needs to project fields (`urls.todoToggle`, `urls.index`, ...) off the `Urls` value — and
+`AppUrls` doesn't exist until `application`'s invocation runs in `Main.lean`, *after* every handler
+it references by name (which `Todo.Views`' functions are ultimately called from) must already be
+declared. So nothing upstream of `application` — including `Todo.Views` and `Main.lean`'s own
+handlers — can name `AppUrls` concretely, and no amount of instance/adapter code written *after*
+`application` helps either, because `application` generates its struct and its handler-wired `def`
+as one atomic invocation with no seam in between for hand-written code to sit.
+
+Resolution: `Todo/Urls.lean` (new) declares `class HasUrls (Urls : Type)` with one method per field
+`Todo.Views` needs, matching `AppUrls`'s eventual field names exactly. `Todo.Views`' functions and
+`Main.lean`'s handlers are written generically against `{Urls} [HasUrls Urls]`, never naming
+`AppUrls`. `application` itself gained a new, plan-unanticipated `deriving <ClassName>` clause
+(§2's grammar, `Routing/Application.lean`): when given, the macro emits a mechanical instance
+(struct field name ↦ same-named class method, `fun u => u.field`) *between* its own two generated
+declarations — the one place that ordering gap can actually be closed, since only the macro's own
+generated code runs there. `Main.lean` writes `application app : SQLite deriving Todo.HasUrls
+where ...`; `Routing` stays app-framework-agnostic since the macro never references `Todo` by
+name, only whatever class name it's given. See `Routing/Application.lean`'s `DerivingTest` for the
+regression and `Todo/Urls.lean`/`Main.lean` for the real usage.
+
 ### Phase 4 — cleanup
 
-- [ ] Once `Todo/Routes.lean`'s named constants are gone and nothing calls `route`/`Route.get`/
+- [x] Once `Todo/Routes.lean`'s named constants are gone and nothing calls `route`/`Route.get`/
       `Route.post`/`Route.put`/`Route.delete`/`routeUrl` with anything but a string *literal*
       anymore, re-open whether to harden those five functions into literal-only macros (the
       `parsePattern!`-retirement idea `docs/reverse-routing-macro-plan.md` §5 scoped and deferred
       for exactly this sequencing reason). Not required for this feature to ship; worth a
       deliberate yes/no rather than silently doing or skipping it.
-- [ ] Re-read `Routing.lean`'s module docstring (the "How to add a route" section in particular)
+
+  **Decision: no, not now.** Confirmed true as of this migration (`Route.get`/etc./`routeUrl` are
+  only ever reached through `application`'s own generated code, which always passes a literal via
+  `Syntax.mkStrLit`, plus each file's own `#guard`/test call sites, also literals) — but `route`
+  and friends are still `Routing`'s own public, documented API (`Routing.lean`'s "How to add a
+  route" section), usable directly outside an `application` block by design, and nothing in this
+  migration depends on closing off the non-literal case. Hardening them into literal-only macros is
+  a real (if small) piece of new macro work with its own error-message-quality bar to clear
+  (`parsePattern!`'s panic-vs-`none` distinction, `docs/reverse-routing-macro-plan.md` §5) — worth
+  doing the next time someone is already deep in this macro's error-reporting paths, not as a
+  drive-by here.
+- [x] Re-read `Routing.lean`'s module docstring (the "How to add a route" section in particular)
       and update it to describe `application` as the primary way to build a route table, with
       `route`/`Route.get`/etc. demoted to "what `application` expands to" rather than the top-level
       recommended API.
