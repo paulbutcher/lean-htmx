@@ -4,7 +4,6 @@ import Routing.Route
 import Routing.Server
 import Routing.Url
 import Routing.Application
-import Routing.ApplicationUsingTest
 
 /-!
 # `Routing`: a typed HTTP path router
@@ -102,17 +101,11 @@ application app : SQLite where
 ```
 
 `app.urls.todo 7 = "/todos/7"`; `app.handler db` is a `StatelessHandler` ready
-for `serve`.
-
-If the file `application` is invoked in has libraries upstream of it that also need the generated
-`Urls` struct (e.g. a views library that renders links from it) -- which can't reference that
-struct, since it doesn't exist until every handler `application`'s tree names by identifier is
-already declared -- split it in two: `urlTree <Name> where <items>` (patterns and names only, no
-methods) upstream, generating the struct and its value and recording each name's pattern for later
-lookup; `application <name> : <CtxType> using <UrlsType> where <items>` downstream, referencing
-those already-declared names to attach dispatch without ever restating a pattern. See `Main.lean`
-(`application ... using Todo.Urls where ...`) and `Todo/Urls.lean` (`urlTree Urls where ...`) for a
-complete, real example, and `docs/application-macro-plan.md`'s Phase 3 notes for why.
+for `serve`. See `Main.lean` for a complete, real example, including the
+`deriving <ClassName>` clause that lets a library upstream of the file
+`application` is invoked in (which can't reference the struct `application`
+is about to generate) depend on an abstract typeclass instead
+(`docs/application-macro-plan.md`'s Phase 3 notes; `Todo/Urls.lean`).
 
 `route`/`Route.get`/`.post`/`.put`/`.delete` (`Routing/Route.lean`) and
 `routeUrl` (`Routing/Url.lean`) are what `application` expands to, not the

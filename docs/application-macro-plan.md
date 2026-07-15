@@ -393,48 +393,27 @@ the old design (per-view-function URL threading) — re-derive the call-site lis
       current test-running command is — check `lakefile.toml`/README rather than assuming `lake
       test` still applies) — all three must pass before considering this phase done.
 
-**A real problem this doc didn't foresee, found during implementation, and its resolution
-(revised twice).** `Todo/Views.lean` sits upstream of `Main.lean` in the import graph (`Main`
-imports `Todo`), but needs to project fields (`urls.todoToggle`, `urls.index`, ...) off the `Urls`
-value — and `AppUrls` doesn't exist until `application`'s invocation runs in `Main.lean`, *after*
-every handler it references by name (which `Todo.Views`' functions are ultimately called from)
-must already be declared. So nothing upstream of `application` — including `Todo.Views` and
-`Main.lean`'s own handlers — can name `AppUrls` concretely, and no amount of instance/adapter code
-written *after* `application` helps either, because `application` generates its struct and its
-handler-wired `def` as one atomic invocation with no seam in between for hand-written code to sit.
+**A real problem this doc didn't foresee, found during implementation, and its resolution.**
+`Todo/Views.lean` sits upstream of `Main.lean` in the import graph (`Main` imports `Todo`), but
+needs to project fields (`urls.todoToggle`, `urls.index`, ...) off the `Urls` value — and
+`AppUrls` doesn't exist until `application`'s invocation runs in `Main.lean`, *after* every handler
+it references by name (which `Todo.Views`' functions are ultimately called from) must already be
+declared. So nothing upstream of `application` — including `Todo.Views` and `Main.lean`'s own
+handlers — can name `AppUrls` concretely, and no amount of instance/adapter code written *after*
+`application` helps either, because `application` generates its struct and its handler-wired `def`
+as one atomic invocation with no seam in between for hand-written code to sit.
 
-First resolution (superseded, kept here for the record): a hand-written `class Todo.HasUrls
-(Urls : Type)` upstream, one method per field, with `application` gaining a `deriving <ClassName>`
-clause to emit a mechanical instance between its two generated declarations. This worked, but left
-a real duplication: the *set of route names* still had to be maintained twice (the class's methods,
-the tree's `as` names), agreeing only because a mismatch was a compile error, not because there was
-one source of truth — flagged directly by the person who asked for this feature, mid-review.
-
-**Final resolution: split `application` into two commands so patterns are written exactly once.**
-`urlTree <Name> where <items>` (new, `Routing/Application.lean`) takes *only* a pattern tree (no
-methods — rejected as a macro-time error if given any) and generates the concrete
-`structure <Name> where ...` **and** its value (`def <lowerFirst Name> : <Name> := { ... }`),
-recording each named node's resolved `List PathSeg` in a persistent environment extension
-(`urlTreeExt`) keyed by the struct's fully-qualified name. `application <name> : <CtxType> using
-<UrlsType> where <items>` (new second form) never mentions a pattern string — its tree only ever
-*references* an already-`urlTree`'d name (`ident { method => handler; ... }`, nesting purely
-cosmetic) to attach dispatch, looking each name's pattern back up by name via `urlTreeExt` (a
-macro-time error, pointing at the identifier, if not found). `Todo/Urls.lean` now has a `urlTree`
-block instead of a hand-written class; `Todo.Views`/`Main.lean`'s handlers take a *concrete*
-`urls : Todo.Urls` (no generics, no typeclass — the whole indirection layer is gone); `Main.lean`
-writes `application app : SQLite using Todo.Urls where ...`, contributing nothing but
-method/handler wiring for names it never redeclares. `Routing` stays app-framework-agnostic (the
-extension and both macros are pure `List PathSeg` plumbing, no `Todo` reference anywhere).
-
-One implementation wrinkle worth recording: `urlTreeExt` (an `initialize`d persistent environment
-extension) cannot be *used* — read or written — in the same module it's declared in ("cannot
-evaluate `[init]` declaration ... in the same module", confirmed directly). So the toy
-regression for `urlTree`/`using` couldn't live in `Routing/Application.lean` itself alongside the
-self-contained mode's tests; it lives in a new `Routing/ApplicationUsingTest.lean` that imports
-`Routing.Application`, which — usefully — mirrors the real `Todo.Urls`/`Main.lean` split rather
-than faking it. See `Routing/Application.lean` and `Routing/ApplicationUsingTest.lean` for the
-implementation and regressions, and `Todo/Urls.lean`/`Todo/Views.lean`/`Main.lean` for the real
-usage.
+Resolution: `Todo/Urls.lean` (new) declares `class HasUrls (Urls : Type)` with one method per field
+`Todo.Views` needs, matching `AppUrls`'s eventual field names exactly. `Todo.Views`' functions and
+`Main.lean`'s handlers are written generically against `{Urls} [HasUrls Urls]`, never naming
+`AppUrls`. `application` itself gained a new, plan-unanticipated `deriving <ClassName>` clause
+(§2's grammar, `Routing/Application.lean`): when given, the macro emits a mechanical instance
+(struct field name ↦ same-named class method, `fun u => u.field`) *between* its own two generated
+declarations — the one place that ordering gap can actually be closed, since only the macro's own
+generated code runs there. `Main.lean` writes `application app : SQLite deriving Todo.HasUrls
+where ...`; `Routing` stays app-framework-agnostic since the macro never references `Todo` by
+name, only whatever class name it's given. See `Routing/Application.lean`'s `DerivingTest` for the
+regression and `Todo/Urls.lean`/`Main.lean` for the real usage.
 
 ### Phase 4 — cleanup
 
