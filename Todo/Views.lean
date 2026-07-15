@@ -1,7 +1,6 @@
 import Html
 import Htmx
 import Todo.Db
-import Todo.Routes
 
 /-!
 `Html`/`Htmx`-built fragments for the todo app: the full page shell, the swappable
@@ -40,9 +39,9 @@ htmx's `HX-Current-URL` request header sends the whole current-page URL, not jus
 raw value straight in) denotes, defaulting to `.all` for anything that doesn't end in `/active` or
 `/completed`. -/
 def Filter.path : Filter → String
-  | .all => indexUrl
-  | .active => activeUrl
-  | .completed => completedUrl
+  | .all => "/"
+  | .active => "/active"
+  | .completed => "/completed"
 
 def filterFromPath (path : String) : Filter :=
   if path.endsWith "/active" then .active
@@ -59,13 +58,13 @@ def itemView (item : Item) : Node .flow :=
     [ div
         [ Htmx.input
             { type := "checkbox", checked := item.completed }
-            (hx := { hxPost := todoToggleUrl item.id.toNatClampNeg, hxTarget := "#todo-list-section",
+            (hx := { hxPost := s!"/todos/{item.id}/toggle", hxTarget := "#todo-list-section",
                      hxSwap := some .outerHTML })
             (attrs := { class_ := "toggle" }),
           Htmx.label [item.title]
-            (hx := { hxGet := todoEditUrl item.id.toNatClampNeg, hxTrigger := "dblclick",
+            (hx := { hxGet := s!"/todos/{item.id}/edit", hxTrigger := "dblclick",
                      hxTarget := s!"#{itemId}", hxSwap := some .outerHTML }),
-          Htmx.button [] (hx := { hxDelete := todoUrl item.id.toNatClampNeg, hxTarget := "#todo-list-section",
+          Htmx.button [] (hx := { hxDelete := s!"/todos/{item.id}", hxTarget := "#todo-list-section",
                                    hxSwap := some .outerHTML })
             (attrs := { class_ := "destroy" }) ]
         (attrs := { class_ := "view" }) ]
@@ -81,7 +80,7 @@ def itemEditView (item : Item) : Node .flow :=
   li
     [ Htmx.input
         { type := "text", name := "title", value := item.title }
-        (hx := { hxPut := todoUrl item.id.toNatClampNeg, hxTrigger := "blur, keyup[key=='Enter']",
+        (hx := { hxPut := s!"/todos/{item.id}", hxTrigger := "blur, keyup[key=='Enter']",
                  hxTarget := "#todo-list-section", hxSwap := some .outerHTML })
         (attrs := { class_ := "edit" })
         (rawAttrs := [("autofocus", "autofocus")]) ]
@@ -95,7 +94,7 @@ def listSection (items : Array Item) : Node .flow :=
   section_
     [ Htmx.input
         { type := "checkbox", checked := allCompleted }
-        (hx := { hxPost := toggleAllUrl, hxTarget := "#todo-list-section",
+        (hx := { hxPost := "/todos/toggle-all", hxTarget := "#todo-list-section",
                  hxSwap := some .outerHTML })
         (attrs := { id := "toggle-all", class_ := "toggle-all" }),
       label [] (attrs := {}) (rawAttrs := [("for", "toggle-all")]),
@@ -128,7 +127,7 @@ def footerFragment (allItems : Array Item) (filter : Filter) : Node .flow :=
          (attrs := { class_ := "filters" }) ]
       ++ if completedCount > 0 then
            [ (Htmx.button ["Clear completed"]
-               (hx := { hxDelete := clearCompletedUrl, hxTarget := "#todo-list-section",
+               (hx := { hxDelete := "/todos/completed", hxTarget := "#todo-list-section",
                         hxSwap := some .outerHTML })
                (attrs := { class_ := "clear-completed" }) : Node .flow) ]
          else [])
@@ -146,6 +145,61 @@ successful add since only `#todo-list-section` is swapped, not the form), the li
 the out-of-band-capable footer rendered inline (its `hx-swap-oob` attribute is simply ignored on a
 normal full-page load, only mattering when it arrives as part of an htmx swap). `items` is the
 current filter's subset (for the list itself); `allItems` is every todo (for the footer's count). -/
+-- #guard smoke tests, matching the per-function convention in
+-- Html/Tags.lean/Htmx/Tags.lean: minimal-input rendering for every function
+-- above, a completed/selected-state variant where the function branches on
+-- one, and the pluralization/conditional-button boundaries in
+-- `footerFragment`. Strings below were captured from an actual `#eval` of
+-- each expression against the live toolchain, not hand-derived.
+
+private def sampleItem : Item := { id := 1, title := "Buy milk", completed := false }
+private def sampleItemDone : Item := { id := 2, title := "Wash car", completed := true }
+private def sampleItemUnsafe : Item := { id := 3, title := "<b>x</b> & \"y\"", completed := false }
+
+#guard Node.render (itemView sampleItem) =
+  "<li id=\"todo-1\"><div class=\"view\"><input type=\"checkbox\" class=\"toggle\" hx-post=\"/todos/1/toggle\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"><label hx-get=\"/todos/1/edit\" hx-trigger=\"dblclick\" hx-target=\"#todo-1\" hx-swap=\"outerHTML\">Buy milk</label><button class=\"destroy\" hx-delete=\"/todos/1\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"></button></div></li>"
+#guard Node.render (itemView sampleItemDone) =
+  "<li id=\"todo-2\" class=\"completed\"><div class=\"view\"><input type=\"checkbox\" checked class=\"toggle\" hx-post=\"/todos/2/toggle\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"><label hx-get=\"/todos/2/edit\" hx-trigger=\"dblclick\" hx-target=\"#todo-2\" hx-swap=\"outerHTML\">Wash car</label><button class=\"destroy\" hx-delete=\"/todos/2\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"></button></div></li>"
+-- The title is escaped, same as any other user-supplied text (Html/Tags.lean's own `#guard`).
+#guard Node.render (itemView sampleItemUnsafe) =
+  "<li id=\"todo-3\"><div class=\"view\"><input type=\"checkbox\" class=\"toggle\" hx-post=\"/todos/3/toggle\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"><label hx-get=\"/todos/3/edit\" hx-trigger=\"dblclick\" hx-target=\"#todo-3\" hx-swap=\"outerHTML\">&lt;b&gt;x&lt;/b&gt; &amp; &quot;y&quot;</label><button class=\"destroy\" hx-delete=\"/todos/3\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"></button></div></li>"
+
+#guard Node.render (itemEditView sampleItem) =
+  "<li id=\"todo-1\" class=\"editing\"><input type=\"text\" name=\"title\" value=\"Buy milk\" class=\"edit\" hx-put=\"/todos/1\" hx-trigger=\"blur, keyup[key=='Enter']\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\" autofocus=\"autofocus\"></li>"
+#guard Node.render (itemEditView sampleItemUnsafe) =
+  "<li id=\"todo-3\" class=\"editing\"><input type=\"text\" name=\"title\" value=\"&lt;b&gt;x&lt;/b&gt; &amp; &quot;y&quot;\" class=\"edit\" hx-put=\"/todos/3\" hx-trigger=\"blur, keyup[key=='Enter']\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\" autofocus=\"autofocus\"></li>"
+
+#guard Node.render (listSection #[]) =
+  "<section id=\"todo-list-section\" class=\"main\"><input type=\"checkbox\" id=\"toggle-all\" class=\"toggle-all\" hx-post=\"/todos/toggle-all\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"><label for=\"toggle-all\"></label><ul class=\"todo-list\"></ul></section>"
+#guard Node.render (listSection #[sampleItem]) =
+  "<section id=\"todo-list-section\" class=\"main\"><input type=\"checkbox\" id=\"toggle-all\" class=\"toggle-all\" hx-post=\"/todos/toggle-all\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"><label for=\"toggle-all\"></label><ul class=\"todo-list\"><li id=\"todo-1\"><div class=\"view\"><input type=\"checkbox\" class=\"toggle\" hx-post=\"/todos/1/toggle\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"><label hx-get=\"/todos/1/edit\" hx-trigger=\"dblclick\" hx-target=\"#todo-1\" hx-swap=\"outerHTML\">Buy milk</label><button class=\"destroy\" hx-delete=\"/todos/1\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"></button></div></li></ul></section>"
+-- `toggle-all`'s own `checked` requires a *nonempty* list where every item is completed --
+-- a lone completed item flips it, an empty list (above) does not.
+#guard Node.render (listSection #[sampleItemDone]) =
+  "<section id=\"todo-list-section\" class=\"main\"><input type=\"checkbox\" checked id=\"toggle-all\" class=\"toggle-all\" hx-post=\"/todos/toggle-all\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"><label for=\"toggle-all\"></label><ul class=\"todo-list\"><li id=\"todo-2\" class=\"completed\"><div class=\"view\"><input type=\"checkbox\" checked class=\"toggle\" hx-post=\"/todos/2/toggle\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"><label hx-get=\"/todos/2/edit\" hx-trigger=\"dblclick\" hx-target=\"#todo-2\" hx-swap=\"outerHTML\">Wash car</label><button class=\"destroy\" hx-delete=\"/todos/2\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\"></button></div></li></ul></section>"
+
+#guard Node.render (filterLink .all .all "All") = "<li><a href=\"/\" class=\"selected\">All</a></li>"
+#guard Node.render (filterLink .all .active "Active") = "<li><a href=\"/active\">Active</a></li>"
+
+-- Pluralization boundary (0/1/N) and the clear-completed button's presence
+-- exactly tracking whether there's a completed item to clear.
+#guard Node.render (footerFragment #[] .all) =
+  "<footer id=\"todo-footer\" class=\"footer\" hx-swap-oob=\"true\"><p class=\"todo-count\">0 items left</p><ul class=\"filters\"><li><a href=\"/\" class=\"selected\">All</a></li><li><a href=\"/active\">Active</a></li><li><a href=\"/completed\">Completed</a></li></ul></footer>"
+#guard Node.render (footerFragment #[sampleItem] .active) =
+  "<footer id=\"todo-footer\" class=\"footer\" hx-swap-oob=\"true\"><p class=\"todo-count\">1 item left</p><ul class=\"filters\"><li><a href=\"/\">All</a></li><li><a href=\"/active\" class=\"selected\">Active</a></li><li><a href=\"/completed\">Completed</a></li></ul></footer>"
+#guard Node.render (footerFragment #[sampleItem, sampleItemDone] .all) =
+  "<footer id=\"todo-footer\" class=\"footer\" hx-swap-oob=\"true\"><p class=\"todo-count\">1 item left</p><ul class=\"filters\"><li><a href=\"/\" class=\"selected\">All</a></li><li><a href=\"/active\">Active</a></li><li><a href=\"/completed\">Completed</a></li></ul><button class=\"clear-completed\" hx-delete=\"/todos/completed\" hx-target=\"#todo-list-section\" hx-swap=\"outerHTML\">Clear completed</button></footer>"
+
+-- `Filter.path`/`filterFromPath` round-trip for all three filters, plus
+-- `filterFromPath`'s `endsWith`-on-a-full-URL behaviour (htmx's
+-- `HX-Current-URL` sends a whole URL, not just a path) and its default to
+-- `.all` for anything unrecognised.
+#guard filterFromPath (Filter.path .all) == .all
+#guard filterFromPath (Filter.path .active) == .active
+#guard filterFromPath (Filter.path .completed) == .completed
+#guard filterFromPath "http://localhost:2000/completed" == .completed
+#guard filterFromPath "/garbage" == .all
+
 def page (items allItems : Array Item) (filter : Filter) : String :=
   document (pretty := true) (lang := "en")
     [ head
@@ -159,7 +213,7 @@ def page (items allItems : Array Item) (filter : Filter) : String :=
                         { name := "title", placeholder := "What needs to be done?" }
                         (attrs := { class_ := "new-todo" })
                         (rawAttrs := [("autofocus", "autofocus")]) ]
-                    (hx := { hxPost := todosUrl, hxTarget := "#todo-list-section",
+                    (hx := { hxPost := "/todos", hxTarget := "#todo-list-section",
                              hxSwap := some .outerHTML })
                     (rawAttrs := [("hx-on::after-request", "this.reset()")]) ]
                 (attrs := { class_ := "header" }),

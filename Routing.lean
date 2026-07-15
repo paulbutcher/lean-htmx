@@ -2,7 +2,6 @@ import Routing.Pattern
 import Routing.Handler
 import Routing.Route
 import Routing.Server
-import Routing.Url
 
 /-!
 # `Routing`: a typed HTTP path router
@@ -60,23 +59,13 @@ round-trips on well-formed input, plus `#guard` regressions for malformed
 input (doubled/trailing `/`, unknown or missing capture kind, empty
 capture name) all failing via `none`, never a panic.
 
-## Reverse routing
-
-`UrlType`/`renderUrl`/`routeUrl` (`Routing/Url.lean`) generate a URL from
-a pattern string and typed arguments -- the mirror image of
-`HandlerType`/`dispatch`: same `segs`, same per-capture currying shape,
-opposite direction (arguments in, path out, instead of path in,
-arguments out). Confirms the design doc's prediction that this would be
-additive over plain `List PathSeg` data (§5) -- no new type-level
-machinery needed beyond what `Pattern.lean` already produces. `routeUrl
-pattern` takes the *same* pattern string literal passed to `route`, so a
-call site with the wrong argument types/count is a compile error, exactly
-like a wrong-arity handler (`Handler.lean`'s `badArity` regression; the
-counterpart is `Url.lean`'s `badUrlArity`).
-
 ## Not yet supported (deferred, see `docs/routing-design-plan.md` §5)
 
 - **Query-string parameters** -- `dispatch` only matches the path.
+- **Reverse routing** (generating a URL from a route value, Yesod's
+  killer feature) -- routes staying plain `List PathSeg` data rather than
+  a type-level encoding should make this additive later, but that's not
+  verified yet.
 - **`CaptureKind` is a closed enum** (`Nat`/`String` only). Whether to open
   it into a typeclass so downstream code can add capture types is
   deferred.
@@ -86,8 +75,5 @@ counterpart is `Url.lean`'s `badUrlArity`).
 Call `route method pattern handler` (`Routing/Route.lean`) with a pattern
 string and a handler whose argument types match each `:name:Kind` capture
 in order (`Nat` for `:Nat`, `String` for `:String`), then add it to the
-`List (Route Result)` passed to `toHandler` (`Routing/Server.lean`). If
-the same URL is needed elsewhere (a link, an `hx-*` attribute), pass the
-same pattern string to `routeUrl` (`Routing/Url.lean`) instead of
-hand-building it, so the two can never drift apart.
+`List (Route Result)` passed to `toHandler` (`Routing/Server.lean`).
 -/
