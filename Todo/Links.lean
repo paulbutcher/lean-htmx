@@ -1,6 +1,6 @@
 import Routing.RouteTable
 
-routeTable! Todo
+routeTable! Routes
   [ "/"                      as index,
     "/active"                as active,
     "/completed"             as completed,
