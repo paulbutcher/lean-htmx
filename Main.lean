@@ -85,4 +85,6 @@ def main : IO Unit := Async.block do
   Todo.initSchema db
   let addr := .v4 ⟨.ofParts 127 0 0 1, 2000⟩
   let handler := routes db |> toHandler
-  serve addr handler >>= waitShutdown
+  let server ← serve addr handler
+  IO.println s!"Listening on http://{server.localAddr.getD addr}"
+  server.waitShutdown
