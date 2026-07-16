@@ -3,42 +3,18 @@ import Htmx
 import Todo.Db
 import Todo.Links
 
-/-!
-`Html`/`Htmx`-built fragments for the todo app: the full page shell, the swappable
-todo-list-plus-toggle-all region, a single item (view mode and edit mode), and the out-of-band
-footer (count, filters, clear-completed). See `docs/todo-app-plan.md` for the overall design --
-in particular, every mutating route (add/toggle/delete/edit-save/toggle-all/clear-completed)
-shares `mutationFragment` below: it re-renders `#todo-list-section` as the primary swap target
-plus `#todo-footer` as an out-of-band swap (`Htmx.Attrs.HtmxAttrs.hxSwapOob`), so one response
-keeps the list and the footer's count/filters/clear-completed button in sync.
--/
-
 namespace Todo
 
 open Html
 
--- Only the tags below need `hx-*` attributes (the plain `Html.*` tags of the same name are used
--- everywhere else, matching `Main.lean`'s existing convention of qualifying `Htmx.button`
--- explicitly rather than `open Htmx`, which would otherwise clash with `Html`'s identically-named
--- tag functions).
-
-/-- htmx, loaded the same way `Main.lean`'s original demo page loaded it. -/
 def htmxScript : ScriptAttrs :=
   { src := "https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
     integrity := "sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
     crossorigin := "anonymous" }
 
-/-- The official TodoMVC stylesheet, purely cosmetic -- the markup below uses its expected class
-names (`todoapp`, `new-todo`, `todo-list`, `todo-count`, `filters`, `clear-completed`, ...) so the
-demo reads as TodoMVC rather than unstyled HTML. -/
 def todomvcCss : LinkAttrs :=
   { rel := "stylesheet", href := "https://unpkg.com/todomvc-app-css@2.4.3/index.css" }
 
-/-- The URL path for a filter, and the filter a path (or a full URL ending in that path --
-htmx's `HX-Current-URL` request header sends the whole current-page URL, not just its path, so
-`endsWith` rather than exact equality is what lets `Main.lean`'s route handlers pass that header's
-raw value straight in) denotes, defaulting to `.all` for anything that doesn't end in `/active` or
-`/completed`. -/
 def Filter.path : Filter → String
   | .all => links.index
   | .active => links.active
@@ -49,10 +25,6 @@ def filterFromPath (path : String) : Filter :=
   else if path.endsWith "/completed" then .completed
   else .all
 
-/-- One todo, view mode: a checkbox (`hx-post .../toggle`), a label that swaps itself into edit
-mode on double-click (`hx-trigger="dblclick"`), and a delete button (`hx-delete`). All three post
-back against `#todo-list-section` (see `listSection`) so the shared `mutationFragment` renderer
-handles every one of them uniformly. -/
 def itemView (item : Item) : Node .flow :=
   let itemId := s!"todo-{item.id}"
   let id := item.id.toInt.toNat
@@ -72,11 +44,6 @@ def itemView (item : Item) : Node .flow :=
         (attrs := { class_ := "view" }) ]
     (attrs := { id := itemId, class_ := if item.completed then "completed" else none })
 
-/-- One todo, edit mode: swapped in by `itemView`'s label on double-click, targeting just this
-`<li>` (not the whole list -- editing a title doesn't change the count or filters). Saving happens
-on blur or Enter (`hx-trigger`), `hx-put`s the new title, and -- like every other mutation -- swaps
-`#todo-list-section` and the out-of-band footer, since an edit can empty the title and delete the
-todo (`Todo.setTitle`), which *does* change the count. -/
 def itemEditView (item : Item) : Node .flow :=
   let itemId := s!"todo-{item.id}"
   li
@@ -88,9 +55,6 @@ def itemEditView (item : Item) : Node .flow :=
         (rawAttrs := [("autofocus", "autofocus")]) ]
     (attrs := { id := itemId, class_ := "editing" })
 
-/-- The swappable region containing the "mark all as complete" toggle and the list itself.
-`id="todo-list-section"` is what every mutating handler's `hx-target`/`hx-swap="outerHTML"` names
--- see `mutationFragment`. -/
 def listSection (items : Array Item) : Node .flow :=
   let allCompleted := items.size > 0 && items.all (·.completed)
   section_
@@ -103,21 +67,10 @@ def listSection (items : Array Item) : Node .flow :=
       ul (items.toList.map itemView) (attrs := { class_ := "todo-list" }) ]
     (attrs := { id := "todo-list-section", class_ := "main" })
 
-/-- One `<li>` in the footer's filter list: a plain (non-htmx) link, so clicking a filter does a
-normal full-page navigation to `/`, `/active`, or `/completed` -- simplest way to keep "which
-filter" correctly reflected on the next htmx-driven mutation's `HX-Current-URL` header, with no
-client-side state to keep in sync. -/
 def filterLink (current target : Filter) (label : String) : Node .flow :=
   li [ a { href := target.path } [label]
          (attrs := { class_ := if current == target then "selected" else none }) ]
 
-/-- The out-of-band footer: item count (correctly pluralized), the three filter links, and a
-clear-completed button shown only when there's something to clear. Takes `allItems` -- every todo,
-regardless of `filter` -- since the count and clear-completed button must reflect the whole list
-even while viewing just the active or just the completed ones. `hxSwapOob := "true"` is what lets
-every mutation's response update this alongside its primary `#todo-list-section` swap in one round
-trip. The count is a bare `<span>`, matching what the TodoMVC stylesheet expects it to be -- no
-margin override needed, since `<span>` (unlike `<p>`) has no browser default margin to cancel. -/
 def footerFragment (allItems : Array Item) (filter : Filter) : Node .flow :=
   let activeCount := (allItems.filter (!·.completed)).size
   let completedCount := allItems.size - activeCount
@@ -135,10 +88,6 @@ def footerFragment (allItems : Array Item) (filter : Filter) : Node .flow :=
          else [])
     (hx := { hxSwapOob := "true" }) (attrs := { id := "todo-footer", class_ := "footer" })
 
-/-- Shared by every mutating route: `listSection` (the primary `hx-target`/`hx-swap="outerHTML"`
-swap) followed immediately by the out-of-band `footerFragment`, so one response keeps the list and
-the footer's count/filters/clear-completed button in sync. `items` is the current filter's subset
-(for the list itself); `allItems` is every todo (for the footer's count). -/
 def mutationFragment (items allItems : Array Item) (filter : Filter) : String :=
   Node.render (listSection items) ++ Node.render (footerFragment allItems filter)
 

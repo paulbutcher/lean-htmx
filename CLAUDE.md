@@ -12,3 +12,12 @@ Project-specific guidance for Claude Code when working in this repo.
   as the final ground truth.
 - If a change adds or removes an `import`, use `mcp__lean-lsp__lean_build`
   instead of (or in addition to) plain `lake build`.
+
+## Commenting code
+
+- Only add comments which say something over and above what the source code already
+  says. Avoid comments which restate what can be derived easily by reading the code.
+- This includes header comments for both files and functions. Avoid them unless they
+  add real value.
+- Do add comments when it's not clear *why* the code is doing what it does just 
+  from reading the code.
