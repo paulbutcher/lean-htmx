@@ -4,7 +4,7 @@ import Htmx.Attrs
 Tests for `Htmx.Attrs`.
 -/
 
-namespace Tests
+namespace HtmxTests
 
 open Htmx
 
@@ -37,4 +37,4 @@ open Htmx
 #guard HtmxAttrs.toPairs { hxGet := "/x", hxTarget := "#y", hxSwap := some .innerHTML }
   = [("hx-get", "/x"), ("hx-target", "#y"), ("hx-swap", "innerHTML")]
 
-end Tests
+end HtmxTests

@@ -4,7 +4,7 @@ import Htmx.Tags
 Tests for `Htmx.Tags`.
 -/
 
-namespace Tests
+namespace HtmxTests
 
 open Htmx
 
@@ -43,4 +43,4 @@ open Htmx
 #guard Html.Node.render (div [] { hxGet := "/x" } { id := "y" } [("data-z", "1")])
   = "<div id=\"y\" hx-get=\"/x\" data-z=\"1\"></div>"
 
-end Tests
+end HtmxTests

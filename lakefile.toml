@@ -1,15 +1,15 @@
-name = "html"
+name = "htmx"
 version = "0.1.0"
 defaultTargets = ["Htmx"]
-testDriver = "Tests"
+testDriver = "HtmxTests"
 
 [[require]]
 name = "html"
 git = "https://github.com/paulbutcher/lean-html"
-rev = "v0.1.0"
+rev = "v0.1.1"
 
 [[lean_lib]]
 name = "Htmx"
 
 [[lean_lib]]
-name = "Tests"
+name = "HtmxTests"
