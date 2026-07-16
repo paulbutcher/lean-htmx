@@ -1,4 +1,16 @@
 {"version": "1.2.0",
- "name": "html",
+"packagesDir": ".lake/packages",
+ "packages":
+ [{"url": "https://github.com/paulbutcher/lean-html",
+   "type": "git",
+   "subDir": null,
+   "scope": "",
+   "rev": "3699c88e829e6225c1b8f728c6c1ade17420397a",
+   "name": "html",
+   "manifestFile": "lake-manifest.json",
+   "inputRev": "v0.1.0",
+   "inherited": false,
+   "configFile": "lakefile.toml"}],
+ "name": "htmlx",
  "lakeDir": ".lake",
  "fixedToolchain": false}
