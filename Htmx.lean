@@ -47,12 +47,14 @@ exactly what cost the ergonomics there; this library does not attempt it.
 Add a field to `HtmxAttrs` in `Htmx/Attrs.lean` (a closed vocabulary like
 `hx-swap`'s gets its own enum, per `HxSwap`'s pattern; most attributes stay
 plain `Option String`, same non-goal as `Html`'s `href`/`src` -- see 1.3),
-wire it into `HtmxAttrs.toPairs`, and add a `#guard` test.
+wire it into `HtmxAttrs.toPairs`, and add a `#guard` test to
+`Tests/Attrs.lean`.
 
 ## How to add a new htmx-wrapped tag
 
 Add a wrapper to `Htmx/Tags.lean` with the same signature as the matching
 `Html.*` tag plus `(hx : HtmxAttrs := {})`, forwarding via
 `hx.toPairs ++ rawAttrs` -- see any existing wrapper (e.g. `Htmx.div`) for
-the exact shape. Add a `#guard` smoke test next to the others.
+the exact shape. Add a `#guard` smoke test to `Tests/Tags.lean`, next to
+the others.
 -/
