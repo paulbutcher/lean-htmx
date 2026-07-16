@@ -21,7 +21,7 @@ index) between source and target. Here both sides are fully concrete, so
 there's no metavariable for coercion insertion to choke on -- confirmed by
 spike, including that a genuine type error (e.g. `id := true`) still
 produces a plain, direct message rather than 1.2's opaque one (see
-`#guard_msgs` example below). -/
+`Tests/Attrs.lean`'s `#guard_msgs` example). -/
 scoped instance : Coe String (Option String) := ⟨some⟩
 
 /-- Render a boolean attribute: the bare attribute name when `true`,
@@ -42,7 +42,7 @@ private def renderOpt (name : String) : Option String → String
 /-- Render arbitrary `(name, value)` pairs verbatim: values escaped, names
 *not* validated. See `docs/html-library-plan.md` 1.3 for why this
 asymmetry is intentional (names are assumed to always be literal
-source-code identifiers) and the `#guard` below for a test that documents
+source-code identifiers) and `Tests/Attrs.lean`'s test that documents
 the gap rather than closing it. -/
 def renderRawAttrs (attrs : List (String × String)) : String :=
   String.join (attrs.map (fun (n, v) => renderAttr n v))
@@ -150,53 +150,6 @@ structure DataAttrs where
 def DataAttrs.render (a : DataAttrs) : String :=
   renderAttr "value" a.value
 
--- #guard tests, one (or more) per attribute. Optional `String` fields are
--- set via the `Coe String (Option String)` instance above, not `some` --
--- see that instance's doc comment for why this is safe here.
-#guard HtmlAttrs.render {} = ""
-#guard HtmlAttrs.render { id := "x" } = " id=\"x\""
-#guard HtmlAttrs.render { class_ := "a b" } = " class=\"a b\""
-#guard HtmlAttrs.render { style := "color:red" } = " style=\"color:red\""
-#guard HtmlAttrs.render { title := "t" } = " title=\"t\""
-#guard HtmlAttrs.render { lang := "en" } = " lang=\"en\""
-#guard HtmlAttrs.render { dir := "ltr" } = " dir=\"ltr\""
-#guard HtmlAttrs.render { id := "x", class_ := "y" } = " id=\"x\" class=\"y\""
-#guard HtmlAttrs.render { id := "x\"y" } = " id=\"x&quot;y\""  -- values still escaped
-
--- Regression test: a genuinely wrong-typed field still fails cleanly, not
--- with 1.2's opaque "Application type mismatch ... ?m.7" message -- see
--- the `Coe` instance's doc comment above for why.
-/--
-error: Type mismatch
-  true
-has type
-  Bool
-but is expected to have type
-  Option String
--/
-#guard_msgs in
-example := HtmlAttrs.render { id := true }
-
-#guard AAttrs.render { href := "https://example.com" } = " href=\"https://example.com\""
-#guard AAttrs.render { href := "x", target := "_blank" } = " href=\"x\" target=\"_blank\""
-
-#guard ImgAttrs.render { src := "a.png", alt := "desc" } = " src=\"a.png\" alt=\"desc\""
-
-#guard ScriptAttrs.render { src := "/a.js" } = " src=\"/a.js\""
-#guard ScriptAttrs.render { src := "/a.js", integrity := "sha384-x", crossorigin := "anonymous" }
-  = " src=\"/a.js\" integrity=\"sha384-x\" crossorigin=\"anonymous\""
-
-#guard LinkAttrs.render { rel := "stylesheet", href := "/style.css" }
-  = " rel=\"stylesheet\" href=\"/style.css\""
-
-#guard QAttrs.render {} = ""
-#guard QAttrs.render { cite := "https://example.com" } = " cite=\"https://example.com\""
-
-#guard TimeAttrs.render {} = ""
-#guard TimeAttrs.render { datetime := "2026-07-14" } = " datetime=\"2026-07-14\""
-
-#guard DataAttrs.render { value := "42" } = " value=\"42\""
-
 /-- Typed attributes for `<ins>`/`<del>`. `cite` is the (optional) URL of a
 source document/message explaining the edit; `datetime` is the (optional)
 machine-readable time the edit was made. -/
@@ -207,10 +160,6 @@ structure InsDelAttrs where
 def InsDelAttrs.render (a : InsDelAttrs) : String :=
   renderOpt "cite" a.cite ++ renderOpt "datetime" a.datetime
 
-#guard InsDelAttrs.render {} = ""
-#guard InsDelAttrs.render { cite := "https://example.com", datetime := "2026-07-14" }
-  = " cite=\"https://example.com\" datetime=\"2026-07-14\""
-
 /-- Typed attributes for `<col>`. `span` (optional) is the number of
 columns the element represents -- stays plain `String` for v1, same
 decision as every other value-bearing attribute (see 1.3). -/
@@ -220,9 +169,6 @@ structure ColAttrs where
 def ColAttrs.render (a : ColAttrs) : String :=
   renderOpt "span" a.span
 
-#guard ColAttrs.render {} = ""
-#guard ColAttrs.render { span := "2" } = " span=\"2\""
-
 /-- Typed attributes for `<fieldset>`. -/
 structure FieldsetAttrs where
   disabled : Bool := false
@@ -230,9 +176,6 @@ structure FieldsetAttrs where
 
 def FieldsetAttrs.render (a : FieldsetAttrs) : String :=
   renderBoolAttr "disabled" a.disabled ++ renderOpt "name" a.name
-
-#guard FieldsetAttrs.render {} = ""
-#guard FieldsetAttrs.render { disabled := true, name := "x" } = " disabled name=\"x\""
 
 /-- Typed attributes for `<optgroup>`. `label` is required -- an optgroup
 without one has nothing to show as its group heading. -/
@@ -242,9 +185,6 @@ structure OptgroupAttrs where
 
 def OptgroupAttrs.render (a : OptgroupAttrs) : String :=
   renderAttr "label" a.label ++ renderBoolAttr "disabled" a.disabled
-
-#guard OptgroupAttrs.render { label := "Fruit" } = " label=\"Fruit\""
-#guard OptgroupAttrs.render { label := "Fruit", disabled := true } = " label=\"Fruit\" disabled"
 
 /-- Typed attributes for `<output>`. `for_` (trailing underscore -- `for`
 is a Lean keyword, same reason as `class_`/`section_`) is the
@@ -257,9 +197,6 @@ structure OutputAttrs where
 def OutputAttrs.render (a : OutputAttrs) : String :=
   renderOpt "for" a.for_ ++ renderOpt "name" a.name
 
-#guard OutputAttrs.render {} = ""
-#guard OutputAttrs.render { for_ := "a b", name := "result" } = " for=\"a b\" name=\"result\""
-
 /-- Typed attributes for `<progress>`. Both stay plain `Option String`,
 same "value-bearing attributes stay `String` for v1" decision as
 elsewhere (1.3) -- no numeric type introduced just for these two fields. -/
@@ -269,9 +206,6 @@ structure ProgressAttrs where
 
 def ProgressAttrs.render (a : ProgressAttrs) : String :=
   renderOpt "value" a.value ++ renderOpt "max" a.max
-
-#guard ProgressAttrs.render {} = ""
-#guard ProgressAttrs.render { value := "50", max := "100" } = " value=\"50\" max=\"100\""
 
 /-- Typed attributes for `<meter>`. -/
 structure MeterAttrs where
@@ -286,10 +220,6 @@ def MeterAttrs.render (a : MeterAttrs) : String :=
   renderOpt "value" a.value ++ renderOpt "min" a.min ++ renderOpt "max" a.max ++
     renderOpt "low" a.low ++ renderOpt "high" a.high ++ renderOpt "optimum" a.optimum
 
-#guard MeterAttrs.render {} = ""
-#guard MeterAttrs.render { value := "6", min := "0", max := "10" }
-  = " value=\"6\" min=\"0\" max=\"10\""
-
 /-- Typed attributes shared by `<details>`/`<dialog>`. `open_` (trailing
 underscore -- `open` is a Lean keyword, same reason as `class_`/`section_`/
 `for_`) is the single boolean attribute both elements have. -/
@@ -298,9 +228,6 @@ structure OpenAttrs where
 
 def OpenAttrs.render (a : OpenAttrs) : String :=
   renderBoolAttr "open" a.open_
-
-#guard OpenAttrs.render {} = ""
-#guard OpenAttrs.render { open_ := true } = " open"
 
 /-- Typed attributes for `<base>`. Both fields are independently optional
 -- a document typically sets one or the other (or both), not necessarily
@@ -312,9 +239,6 @@ structure BaseAttrs where
 def BaseAttrs.render (a : BaseAttrs) : String :=
   renderOpt "href" a.href ++ renderOpt "target" a.target
 
-#guard BaseAttrs.render {} = ""
-#guard BaseAttrs.render { href := "/", target := "_blank" } = " href=\"/\" target=\"_blank\""
-
 /-- Typed attributes for `<canvas>`. -/
 structure CanvasAttrs where
   width : Option String := none
@@ -323,18 +247,12 @@ structure CanvasAttrs where
 def CanvasAttrs.render (a : CanvasAttrs) : String :=
   renderOpt "width" a.width ++ renderOpt "height" a.height
 
-#guard CanvasAttrs.render {} = ""
-#guard CanvasAttrs.render { width := "300", height := "150" } = " width=\"300\" height=\"150\""
-
 /-- Typed attributes for `<slot>`. -/
 structure SlotAttrs where
   name : Option String := none
 
 def SlotAttrs.render (a : SlotAttrs) : String :=
   renderOpt "name" a.name
-
-#guard SlotAttrs.render {} = ""
-#guard SlotAttrs.render { name := "header" } = " name=\"header\""
 
 /-- Typed attributes for `<source>`. Dual-purpose in the real spec --
 inside `<picture>` it's `srcset`/`type`/`media` (no `src`); inside
@@ -351,10 +269,6 @@ def SourceAttrs.render (a : SourceAttrs) : String :=
   renderOpt "src" a.src ++ renderOpt "srcset" a.srcset ++ renderOpt "type" a.type ++
     renderOpt "media" a.media
 
-#guard SourceAttrs.render {} = ""
-#guard SourceAttrs.render { src := "a.mp4", type := "video/mp4" }
-  = " src=\"a.mp4\" type=\"video/mp4\""
-
 /-- Typed attributes for `<track>`. `src` is required -- a track without
 one has nothing to load. -/
 structure TrackAttrs where
@@ -367,10 +281,6 @@ structure TrackAttrs where
 def TrackAttrs.render (a : TrackAttrs) : String :=
   renderAttr "src" a.src ++ renderOpt "kind" a.kind ++ renderOpt "srclang" a.srclang ++
     renderOpt "label" a.label ++ renderBoolAttr "default" a.default
-
-#guard TrackAttrs.render { src := "a.vtt" } = " src=\"a.vtt\""
-#guard TrackAttrs.render { src := "a.vtt", kind := "subtitles", srclang := "en", default := true }
-  = " src=\"a.vtt\" kind=\"subtitles\" srclang=\"en\" default"
 
 /-- Typed attributes for `<iframe>`. `src` is required; `title` is
 recommended for accessibility but stays optional (HTML validity doesn't
@@ -385,10 +295,6 @@ def IframeAttrs.render (a : IframeAttrs) : String :=
   renderAttr "src" a.src ++ renderOpt "title" a.title ++ renderOpt "width" a.width ++
     renderOpt "height" a.height
 
-#guard IframeAttrs.render { src := "/embed" } = " src=\"/embed\""
-#guard IframeAttrs.render { src := "/embed", title := "t", width := "300", height := "150" }
-  = " src=\"/embed\" title=\"t\" width=\"300\" height=\"150\""
-
 /-- Typed attributes for `<embed>`. -/
 structure EmbedAttrs where
   src : Option String := none
@@ -400,10 +306,6 @@ def EmbedAttrs.render (a : EmbedAttrs) : String :=
   renderOpt "src" a.src ++ renderOpt "type" a.type ++ renderOpt "width" a.width ++
     renderOpt "height" a.height
 
-#guard EmbedAttrs.render {} = ""
-#guard EmbedAttrs.render { src := "a.swf", type := "application/x-shockwave-flash" }
-  = " src=\"a.swf\" type=\"application/x-shockwave-flash\""
-
 /-- Typed attributes for `<object>`. -/
 structure ObjectAttrs where
   data : Option String := none
@@ -414,10 +316,6 @@ structure ObjectAttrs where
 def ObjectAttrs.render (a : ObjectAttrs) : String :=
   renderOpt "data" a.data ++ renderOpt "type" a.type ++ renderOpt "width" a.width ++
     renderOpt "height" a.height
-
-#guard ObjectAttrs.render {} = ""
-#guard ObjectAttrs.render { data := "a.pdf", type := "application/pdf" }
-  = " data=\"a.pdf\" type=\"application/pdf\""
 
 /-- Typed attributes for `<video>`. -/
 structure VideoAttrs where
@@ -435,9 +333,6 @@ def VideoAttrs.render (a : VideoAttrs) : String :=
     renderBoolAttr "autoplay" a.autoplay ++ renderBoolAttr "loop" a.loop ++
     renderBoolAttr "muted" a.muted ++ renderOpt "width" a.width ++ renderOpt "height" a.height
 
-#guard VideoAttrs.render {} = ""
-#guard VideoAttrs.render { src := "a.mp4", controls := true } = " src=\"a.mp4\" controls"
-
 /-- Typed attributes for `<audio>`. -/
 structure AudioAttrs where
   src : Option String := none
@@ -451,9 +346,6 @@ def AudioAttrs.render (a : AudioAttrs) : String :=
     renderBoolAttr "autoplay" a.autoplay ++ renderBoolAttr "loop" a.loop ++
     renderBoolAttr "muted" a.muted
 
-#guard AudioAttrs.render {} = ""
-#guard AudioAttrs.render { src := "a.mp3", controls := true } = " src=\"a.mp3\" controls"
-
 /-- Typed attributes for `<map>`. `name` is required -- an image map
 without one can't be referenced by an `<img usemap="#...">`. -/
 structure MapAttrs where
@@ -461,8 +353,6 @@ structure MapAttrs where
 
 def MapAttrs.render (a : MapAttrs) : String :=
   renderAttr "name" a.name
-
-#guard MapAttrs.render { name := "sitemap" } = " name=\"sitemap\""
 
 /-- Typed attributes for `<area>`. `alt` is required whenever `href` is
 present (real spec rule, not enforced here -- both stay independently
@@ -477,25 +367,5 @@ structure AreaAttrs where
 def AreaAttrs.render (a : AreaAttrs) : String :=
   renderOpt "href" a.href ++ renderOpt "alt" a.alt ++ renderOpt "shape" a.shape ++
     renderOpt "coords" a.coords ++ renderOpt "target" a.target
-
-#guard AreaAttrs.render {} = ""
-#guard AreaAttrs.render { href := "#a", alt := "Area A", shape := "rect", coords := "0,0,10,10" }
-  = " href=\"#a\" alt=\"Area A\" shape=\"rect\" coords=\"0,0,10,10\""
-
-#guard InputAttrs.render {} = " type=\"text\""
-#guard InputAttrs.render { disabled := true } = " type=\"text\" disabled"
-#guard InputAttrs.render { disabled := false } = " type=\"text\""  -- explicit: never `disabled="false"`
-#guard InputAttrs.render { checked := true, required := true } = " type=\"text\" checked required"
-#guard InputAttrs.render { name := "q", value := "v" } = " type=\"text\" name=\"q\" value=\"v\""
-
-#guard renderBoolAttr "disabled" true = " disabled"
-#guard renderBoolAttr "disabled" false = ""
-
--- rawAttrs: values are escaped, but names are intentionally NOT validated
--- (documenting the gap, not fixing it -- see docs/html-library-plan.md 1.3).
-#guard renderRawAttrs [("data-x", "a\"b")] = " data-x=\"a&quot;b\""
-#guard renderRawAttrs [("hx-get", "/x"), ("hx-target", "#y")] = " hx-get=\"/x\" hx-target=\"#y\""
-#guard renderRawAttrs [("evil onmouseover=\"alert(1)", "x")]
-  = " evil onmouseover=\"alert(1)=\"x\""  -- a space in the name breaks out of the tag; unchecked by design
 
 end Html

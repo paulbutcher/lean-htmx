@@ -70,7 +70,7 @@ proof in this library:
   the same way as everything else; *names* are not validated at all -- an
   attribute name containing a space, `=`, or `>` breaks out of the tag
   regardless of value-escaping. Names are assumed to always be literal
-  source-code identifiers, never derived from untrusted input (`Html/Attrs.lean`'s
+  source-code identifiers, never derived from untrusted input (`Tests/Attrs.lean`'s
   `renderRawAttrs` `#guard` documents this gap rather than closing it).
 - **`Node.unsafeRaw : String → Node cat`** (`Html/Node.lean`). Verbatim,
   unescaped markup, trusted as-is, valid in any category. Named loudly, not
@@ -100,14 +100,15 @@ breakout, not against a `javascript:`-scheme value (`docs/html-library-plan.md`
    {}) (rawAttrs := [])`, calling the right `Node` primitive from step 1
    with `combineAttrs <specific-attrs-rendered> attrs rawAttrs` as the
    attribute string.
-4. Add a `#guard` smoke test (minimal render output) next to the other
-   tags' tests.
+4. Add a `#guard` smoke test (minimal render output) to `Tests/Tags.lean`,
+   next to the other tags' tests.
 
 ## How to add a new attribute
 
 Add a field to `HtmlAttrs` (global) or the relevant per-element record in
 `Html/Attrs.lean`, wire it into that structure's `.render`, and add a
-`#guard` test. Boolean attributes must go through `renderBoolAttr` (bare
-name when `true`, absent when `false`, never `name="false"`); string
-attributes go through `renderAttr` (escaped, double-quote-delimited).
+`#guard` test to `Tests/Attrs.lean`. Boolean attributes must go through
+`renderBoolAttr` (bare name when `true`, absent when `false`, never
+`name="false"`); string attributes go through `renderAttr` (escaped,
+double-quote-delimited).
 -/
