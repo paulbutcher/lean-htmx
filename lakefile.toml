@@ -1,31 +1,10 @@
-name = "webapp"
+name = "html"
 version = "0.1.0"
-defaultTargets = ["webapp", "Html", "Htmx", "Routing", "Forms", "Todo"]
-testDriver = "TodoTests"
-
-[[require]]
-name = "leansqlite"
-git = "https://github.com/leanprover/leansqlite"
-rev = "v4.31.0"
+defaultTargets = ["Html"]
+testDriver = "Tests"
 
 [[lean_lib]]
 name = "Html"
 
 [[lean_lib]]
-name = "Htmx"
-
-[[lean_lib]]
-name = "Routing"
-
-[[lean_lib]]
-name = "Forms"
-
-[[lean_lib]]
-name = "Todo"
-
-[[lean_lib]]
-name = "TodoTests"
-
-[[lean_exe]]
-name = "webapp"
-root = "Main"
+name = "Tests"
