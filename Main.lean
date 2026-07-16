@@ -68,7 +68,7 @@ def clearCompletedHandler (db : SQLite) (req : Request Body.Stream) :
   Todo.clearCompleted db
   renderMutation db req
 
-def routes (db : SQLite) : List (Route Result) :=
+def app (db : SQLite) : List (Route Result) :=
   [ .get Routes.patterns.index ∘ pageHandler .all,
     .get Routes.patterns.active ∘ pageHandler .active,
     .get Routes.patterns.completed ∘ pageHandler .completed,
@@ -84,7 +84,7 @@ def main : IO Unit := Async.block do
   let db ← SQLite.open ":memory:"
   Todo.initSchema db
   let addr := .v4 ⟨.ofParts 127 0 0 1, 2000⟩
-  let handler := routes db |> toHandler
+  let handler := app db |> toHandler
   let server ← serve addr handler
   IO.println s!"Listening on http://{server.localAddr.getD addr}"
   server.waitShutdown
