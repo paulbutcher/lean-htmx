@@ -13,7 +13,7 @@ Project-specific guidance for Claude Code when working in this repo.
 - If a change adds or removes an `import`, use `mcp__lean-lsp__lean_build`
   instead of (or in addition to) plain `lake build`.
 
-## Commenting code
+## Commenting
 
 - Only add comments which say something over and above what the source code already
   says. Avoid comments which restate what can be derived easily by reading the code.
