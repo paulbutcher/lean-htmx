@@ -68,8 +68,9 @@ def clearCompletedHandler (db : SQLite) (req : Request Body.Stream) :
   Todo.clearCompleted db
   renderMutation db req
 
-def app (db : SQLite) : List (Route Result) :=
-  [ .get Routes.patterns.index ∘ pageHandler .all,
+def app (db : SQLite) : StatelessHandler :=
+  List.map (· db) [
+    .get Routes.patterns.index ∘ pageHandler .all,
     .get Routes.patterns.active ∘ pageHandler .active,
     .get Routes.patterns.completed ∘ pageHandler .completed,
     .post Routes.patterns.todos ∘ addHandler,
@@ -78,13 +79,13 @@ def app (db : SQLite) : List (Route Result) :=
     .post Routes.patterns.toggle ∘ toggleHandler,
     .delete Routes.patterns.todo ∘ deleteHandler,
     .post Routes.patterns.toggleAll ∘ toggleAllHandler,
-    .delete Routes.patterns.clearCompleted ∘ clearCompletedHandler ].map (· db)
+    .delete Routes.patterns.clearCompleted ∘ clearCompletedHandler ]
+  |> toHandler
 
 def main : IO Unit := Async.block do
   let db ← SQLite.open ":memory:"
   Todo.initSchema db
-  let addr := .v4 ⟨.ofParts 127 0 0 1, 2000⟩
-  let handler := app db |> toHandler
-  let server ← serve addr handler
-  IO.println s!"Listening on http://{server.localAddr.getD addr}"
+  let addr := .v4 ⟨.ofParts 127 0 0 1, 0⟩
+  let server ← serve addr (app db)
+  IO.println s!"Listening on http://{server.localAddr.get!}"
   server.waitShutdown

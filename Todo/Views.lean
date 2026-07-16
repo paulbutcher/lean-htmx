@@ -91,11 +91,6 @@ def footerFragment (allItems : Array Item) (filter : Filter) : Node .flow :=
 def mutationFragment (items allItems : Array Item) (filter : Filter) : String :=
   Node.render (listSection items) ++ Node.render (footerFragment allItems filter)
 
-/-- The full page: header with the new-todo form (`hx-post /todos`, resetting itself after a
-successful add since only `#todo-list-section` is swapped, not the form), the list section, and
-the out-of-band-capable footer rendered inline (its `hx-swap-oob` attribute is simply ignored on a
-normal full-page load, only mattering when it arrives as part of an htmx swap). `items` is the
-current filter's subset (for the list itself); `allItems` is every todo (for the footer's count). -/
 def page (items allItems : Array Item) (filter : Filter) : String :=
   document (pretty := true) (lang := "en")
     [ head
