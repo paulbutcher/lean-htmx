@@ -1,15 +1,9 @@
 import Htmx.Attrs
 
-/-!
-Tests for `Htmx.Attrs`.
--/
-
 namespace HtmxTests
 
 open Htmx
 
--- #guard tests, one (or more) per field. Optional `String`/`Bool` fields
--- are set via the `Coe` instances above, not `some`.
 #guard HtmxAttrs.toPairs {} = []
 #guard HtmxAttrs.toPairs { hxGet := "/x" } = [("hx-get", "/x")]
 #guard HtmxAttrs.toPairs { hxPost := "/x" } = [("hx-post", "/x")]
@@ -18,8 +12,6 @@ open Htmx
 #guard HtmxAttrs.toPairs { hxDelete := "/x" } = [("hx-delete", "/x")]
 #guard HtmxAttrs.toPairs { hxTrigger := "click" } = [("hx-trigger", "click")]
 #guard HtmxAttrs.toPairs { hxTarget := "#result" } = [("hx-target", "#result")]
--- No `Coe HxSwap (Option HxSwap)` (see that decision's comment above) --
--- `hxSwap` stays `some`-explicit.
 #guard HtmxAttrs.toPairs { hxSwap := some .outerHTML } = [("hx-swap", "outerHTML")]
 #guard HtmxAttrs.toPairs { hxSwap := some .none } = [("hx-swap", "none")]
 #guard HtmxAttrs.toPairs { hxSwapOob := "true" } = [("hx-swap-oob", "true")]

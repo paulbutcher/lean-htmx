@@ -2,18 +2,7 @@ import Html
 import Htmx.Attrs
 
 /-!
-Thin htmx wrapper tags, one per `Html/Tags.lean` tag. See
-`docs/html-library-plan.md` 1.4 (the mechanism this validates) and Phase 6.
-
-Each wrapper here has exactly the same signature as the matching
-`Html.*` tag, plus one extra typed `hx : HtmxAttrs := {}` parameter. `hx` is
-never part of `Html.Node`'s type -- an `Htmx.div`'s result is a plain
-`Html.Node .flow`, identical to what `Html.div` produces, so it composes
-freely with the rest of `Html` (no `Coe`/reinterpretation needed, unlike
-1.5's rejected mechanism). Internally, every wrapper just flattens `hx` via
-`HtmxAttrs.toPairs` and prepends it to the caller's own `rawAttrs`, then
-forwards to the matching `Html.*` function -- `Html.lean` needed **zero**
-changes for this to work.
+Thin htmx wrapper tags, one per `Html/Tags.lean` tag.
 -/
 
 namespace Htmx

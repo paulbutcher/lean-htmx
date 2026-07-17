@@ -1,16 +1,9 @@
 import Htmx.Tags
 
-/-!
-Tests for `Htmx.Tags`.
--/
-
 namespace HtmxTests
 
 open Htmx
 
--- #guard smoke test per tag: hx attributes render as ordinary rawAttrs,
--- and the result is a plain Html.Node -- fully interoperable with Html's
--- own tag functions (e.g. the `p`/`strong` nesting below).
 #guard Html.Node.render (div [] { hxGet := "/x" }) = "<div hx-get=\"/x\"></div>"
 #guard Html.Node.render (button [Html.Node.text "Go"] { hxPost := "/go", hxTarget := "#r" })
   = "<button hx-post=\"/go\" hx-target=\"#r\">Go</button>"
@@ -27,7 +20,7 @@ open Htmx
 #guard Html.Node.render (hr { hxGet := "/x" }) = "<hr hx-get=\"/x\">"
 #guard Html.Node.render (tr [td [] { hxGet := "/x" }]) = "<tr><td hx-get=\"/x\"></td></tr>"
 
--- Composition: an Htmx tag nests inside a plain Html tag and vice versa --
+ -- Composition: an Htmx tag nests inside a plain Html tag and vice versa --
 -- `hx` never leaks into `Node`'s type (1.4), so both directions typecheck.
 #guard Html.Node.render (Html.div [div [] { hxGet := "/x" }])
   = "<div><div hx-get=\"/x\"></div></div>"
