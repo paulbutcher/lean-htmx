@@ -1,4 +1,4 @@
-{"version": "1.2.0",
+{"version": "0.1.0",
  "packagesDir": ".lake/packages",
  "packages":
  [{"url": "https://github.com/paulbutcher/lean-html",
