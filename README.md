@@ -5,6 +5,8 @@ Typed [htmx](https://htmx.org/) attributes for the
 `Html` tag has a matching `Htmx` wrapper that takes an extra `hx`
 argument for `hx-*` attributes, checked at compile time.
 
+See: [Formally verified CRUD](https://paulbutcher.com/lean2.html).
+
 ## Installation
 
 Add to your `lakefile.toml`:
@@ -13,7 +15,6 @@ Add to your `lakefile.toml`:
 [[require]]
 name = "htmx"
 git = "https://github.com/paulbutcher/lean-htmx"
-rev = "main"
 ```
 
 ## Usage
