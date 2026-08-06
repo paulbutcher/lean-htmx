@@ -66,17 +66,18 @@ def ul (children : List (Html.Node .flow)) (hx : HtmxAttrs := {}) (attrs : Html.
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.ul children attrs (hx.toPairs ++ rawAttrs)
 
-def ol (children : List (Html.Node .flow)) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
-  Html.ol children attrs (hx.toPairs ++ rawAttrs)
+def ol (children : List (Html.Node .flow)) (olAttrs : Html.OlAttrs := {}) (hx : HtmxAttrs := {})
+    (attrs : Html.HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+  Html.ol children olAttrs attrs (hx.toPairs ++ rawAttrs)
 
-def li (children : List (Html.Node .flow)) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
-  Html.li children attrs (hx.toPairs ++ rawAttrs)
+def li (children : List (Html.Node .flow)) (liAttrs : Html.LiAttrs := {}) (hx : HtmxAttrs := {})
+    (attrs : Html.HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+  Html.li children liAttrs attrs (hx.toPairs ++ rawAttrs)
 
-def blockquote (children : List (Html.Node .flow)) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
+def blockquote (children : List (Html.Node .flow)) (blockquoteAttrs : Html.BlockquoteAttrs := {})
+    (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
-  Html.blockquote children attrs (hx.toPairs ++ rawAttrs)
+  Html.blockquote children blockquoteAttrs attrs (hx.toPairs ++ rawAttrs)
 
 def pre (children : List (Html.Node .phrasing)) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
@@ -108,33 +109,36 @@ def br (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
   Html.br attrs (hx.toPairs ++ rawAttrs)
 
 -- Forms.
-def form (children : List (Html.Node .flow)) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
-  Html.form children attrs (hx.toPairs ++ rawAttrs)
+def form (children : List (Html.Node .flow)) (formAttrs : Html.FormAttrs := {}) (hx : HtmxAttrs := {})
+    (attrs : Html.HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+  Html.form children formAttrs attrs (hx.toPairs ++ rawAttrs)
 
 def input (inputAttrs : Html.InputAttrs := {}) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
   Html.input inputAttrs attrs (hx.toPairs ++ rawAttrs)
 
-def label (children : List (Html.Node .phrasing)) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
+def label (children : List (Html.Node .phrasing)) (labelAttrs : Html.LabelAttrs := {})
+    (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
-  Html.label children attrs (hx.toPairs ++ rawAttrs)
+  Html.label children labelAttrs attrs (hx.toPairs ++ rawAttrs)
 
-def textarea (content : String) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
-  Html.textarea content attrs (hx.toPairs ++ rawAttrs)
+def textarea (content : String) (textareaAttrs : Html.TextareaAttrs := {}) (hx : HtmxAttrs := {})
+    (attrs : Html.HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
+  Html.textarea content textareaAttrs attrs (hx.toPairs ++ rawAttrs)
 
-def option (label : String) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
-  Html.option label attrs (hx.toPairs ++ rawAttrs)
+def option (label : String) (optionAttrs : Html.OptionAttrs := {}) (hx : HtmxAttrs := {})
+    (attrs : Html.HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
+  Html.option label optionAttrs attrs (hx.toPairs ++ rawAttrs)
 
-def select (children : List (Html.Node .phrasing)) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
+def select (children : List (Html.Node .phrasing)) (selectAttrs : Html.SelectAttrs := {})
+    (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
-  Html.select children attrs (hx.toPairs ++ rawAttrs)
+  Html.select children selectAttrs attrs (hx.toPairs ++ rawAttrs)
 
-def button (children : List (Html.Node .phrasing)) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
+def button (children : List (Html.Node .phrasing)) (buttonAttrs : Html.ButtonAttrs := {})
+    (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
-  Html.button children attrs (hx.toPairs ++ rawAttrs)
+  Html.button children buttonAttrs attrs (hx.toPairs ++ rawAttrs)
 
 -- Media/void.
 def img (imgAttrs : Html.ImgAttrs) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
@@ -162,12 +166,12 @@ def tr (children : List (Html.Node .flow)) (hx : HtmxAttrs := {}) (attrs : Html.
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.tr children attrs (hx.toPairs ++ rawAttrs)
 
-def th (children : List (Html.Node .flow)) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
-  Html.th children attrs (hx.toPairs ++ rawAttrs)
+def th (children : List (Html.Node .flow)) (thAttrs : Html.ThAttrs := {}) (hx : HtmxAttrs := {})
+    (attrs : Html.HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+  Html.th children thAttrs attrs (hx.toPairs ++ rawAttrs)
 
-def td (children : List (Html.Node .flow)) (hx : HtmxAttrs := {}) (attrs : Html.HtmlAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
-  Html.td children attrs (hx.toPairs ++ rawAttrs)
+def td (children : List (Html.Node .flow)) (tdAttrs : Html.TdAttrs := {}) (hx : HtmxAttrs := {})
+    (attrs : Html.HtmlAttrs := {}) (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+  Html.td children tdAttrs attrs (hx.toPairs ++ rawAttrs)
 
 end Htmx
