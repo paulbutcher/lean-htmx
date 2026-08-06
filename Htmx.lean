@@ -23,16 +23,27 @@ that problem, using a different mechanism than "index `Node` by dialect":
 - `HtmxAttrs` (`Htmx/Attrs.lean`) is one fixed, concrete structure -- fields
   for the common `hx-*` attributes, `Option _ := none`, plus a real closed
   `HxSwap` enum for `hx-swap` (rejects `hxSwap := some "banana"` at compile
-  time, unlike a bare `String` field would).
-- Every tag here (`Htmx/Tags.lean`) is a thin wrapper with the *same*
-  signature as the matching `Html.*` tag, plus one extra typed
-  `hx : HtmxAttrs := {}` parameter. Internally it validates nothing beyond
-  what `HtmxAttrs`'s own field types already enforce, flattens `hx` via
-  `HtmxAttrs.toPairs`, and forwards to the matching `Html.*` function via
-  its existing `rawAttrs` parameter -- exactly `Html`'s "escape hatch for
-  what the typed vocabulary doesn't cover" mechanism (`docs/html-library-plan.md`
-  1.3), just filled in by this library's own typed values instead of ad hoc
-  call-site pairs. `Html.lean` needed **zero** changes.
+  time, unlike a bare `String` field would). It `extends Html.HtmlAttrs`,
+  mirroring `Html`'s own per-element attrs pattern (`AAttrs extends
+  HtmlAttrs`, etc.), so it doubles as the single merged attrs type for
+  every tag that otherwise takes plain `HtmlAttrs`. Elements with their own
+  `Html.<Tag>Attrs` (`OlAttrs`, `FormAttrs`, `ImgAttrs`, ...) get a matching
+  `Htmx.<Tag>Attrs extends Html.<Tag>Attrs, HtmxAttrs` -- Lean's structure
+  inheritance shares the `Html.HtmlAttrs` fields both sides inherit rather
+  than duplicating them, so this is a two-line declaration per element (see
+  `Htmx/Attrs.lean`'s block of them), not a repeat of all 19 `hx-*` fields.
+- Every tag here (`Htmx/Tags.lean`) is a thin wrapper with *exactly* the
+  same signature as the matching `Html.*` tag -- a single `attrs` argument
+  plus `rawAttrs`, nothing extra. Internally it validates nothing beyond
+  what the attrs type's own fields already enforce, splits `attrs` back
+  into its `Html.<Tag>Attrs` part (via the auto-generated `to<Tag>Attrs`/
+  `toHtmlAttrs` projection) and its `HtmxAttrs` part (via `toHtmxAttrs`,
+  flattened by `HtmxAttrs.toPairs`), and forwards to the matching `Html.*`
+  function via its existing `rawAttrs` parameter -- exactly `Html`'s
+  "escape hatch for what the typed vocabulary doesn't cover" mechanism
+  (`docs/html-library-plan.md` 1.3), just filled in by this library's own
+  typed values instead of ad hoc call-site pairs. `Html.lean` needed
+  **zero** changes.
 
 Accepted tradeoff, carried over unchanged from 1.4: an `Htmx.div`'s result
 is a plain `Html.Node .flow`, identical to and freely composable with
@@ -48,13 +59,20 @@ Add a field to `HtmxAttrs` in `Htmx/Attrs.lean` (a closed vocabulary like
 `hx-swap`'s gets its own enum, per `HxSwap`'s pattern; most attributes stay
 plain `Option String`, same non-goal as `Html`'s `href`/`src` -- see 1.3),
 wire it into `HtmxAttrs.toPairs`, and add a `#guard` test to
-`Tests/Attrs.lean`.
+`Tests/Attrs.lean`. Every per-element `Htmx.<Tag>Attrs` picks it up
+automatically, since they all extend `HtmxAttrs`.
 
 ## How to add a new htmx-wrapped tag
 
-Add a wrapper to `Htmx/Tags.lean` with the same signature as the matching
-`Html.*` tag plus `(hx : HtmxAttrs := {})`, forwarding via
-`hx.toPairs ++ rawAttrs` -- see any existing wrapper (e.g. `Htmx.div`) for
+Add a wrapper to `Htmx/Tags.lean` with exactly the same signature as the
+matching `Html.*` tag -- if that tag takes plain `Html.HtmlAttrs`, use
+`HtmxAttrs` as `attrs`; if it takes its own `Html.<Tag>Attrs`, first add
+`structure Htmx.<Tag>Attrs extends Html.<Tag>Attrs, HtmxAttrs` next to the
+others in `Htmx/Attrs.lean`, then use that as `attrs`. Forward via
+`attrs.to<Tag>Attrs`/`attrs.toHtmlAttrs` for the `Html.*` call's own attrs
+argument and `attrs.toHtmxAttrs.toPairs ++ rawAttrs` (or just
+`attrs.toPairs ++ rawAttrs` for the plain-`HtmxAttrs` case) for its
+`rawAttrs` -- see any existing wrapper (e.g. `Htmx.div`, `Htmx.form`) for
 the exact shape. Add a `#guard` smoke test to `Tests/Tags.lean`, next to
 the others.
 -/

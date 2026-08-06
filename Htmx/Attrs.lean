@@ -1,3 +1,5 @@
+import Html
+
 namespace Htmx
 
 /-- `hx-swap`'s value: rejects `hxSwap := some "banana"` at compile time.
@@ -29,8 +31,11 @@ def HxSwap.render : HxSwap → String
   | .delete => "delete"
   | .none => "none"
 
-/-- Typed htmx attributes for one element. -/
-structure HtmxAttrs where
+/-- Typed htmx attributes for one element. `extends Html.HtmlAttrs`, same as
+every `Html.*Attrs` record, so a single `attrs` argument carries both the
+global HTML attributes and the `hx-*` ones -- see the per-element records
+below for the elements that also have their own `Html.*Attrs`. -/
+structure HtmxAttrs extends Html.HtmlAttrs where
   hxGet : Option String := none
   hxPost : Option String := none
   hxPut : Option String := none
@@ -67,7 +72,10 @@ private def prefixedPairs (pre : String) (pairs : List (String × String)) :
     List (String × String) :=
   pairs.map fun (name, value) => (pre ++ name, value)
 
-/-- Flatten to the `(name, value)` pairs `Html`'s `rawAttrs` expects -/
+/-- Flatten the `hx-*` fields to the `(name, value)` pairs `Html`'s `rawAttrs`
+expects. The inherited `Html.HtmlAttrs` fields aren't included here -- those
+render through the normal `Html.*Attrs.render` path via each tag's
+`toHtmlAttrs`/`to<Tag>Attrs` projection. -/
 def HtmxAttrs.toPairs (a : HtmxAttrs) : List (String × String) :=
   optPair "hx-get" a.hxGet ++ optPair "hx-post" a.hxPost ++ optPair "hx-put" a.hxPut ++
     optPair "hx-patch" a.hxPatch ++ optPair "hx-delete" a.hxDelete ++
@@ -80,5 +88,25 @@ def HtmxAttrs.toPairs (a : HtmxAttrs) : List (String × String) :=
     (match a.hxBoost with | none => [] | some b => [("hx-boost", if b then "true" else "false")]) ++
     optPair "hx-ext" a.hxExt ++ optPair "hx-params" a.hxParams ++
     prefixedPairs "hx-on:" a.hxOn ++ prefixedPairs "hx-on::" a.hxOnHtmx
+
+/-! Per-element merged attrs: `Html.<Tag>Attrs` (itself `extends Html.HtmlAttrs`) plus
+`HtmxAttrs`, sharing the inherited `Html.HtmlAttrs` fields via Lean's diamond structure
+inheritance. Each gives the matching `Htmx.<tag>` wrapper in `Htmx/Tags.lean` a single
+`attrs` argument, exactly like the corresponding `Html.<tag>`. -/
+
+structure OlAttrs extends Html.OlAttrs, HtmxAttrs
+structure LiAttrs extends Html.LiAttrs, HtmxAttrs
+structure BlockquoteAttrs extends Html.BlockquoteAttrs, HtmxAttrs
+structure AAttrs extends Html.AAttrs, HtmxAttrs
+structure FormAttrs extends Html.FormAttrs, HtmxAttrs
+structure InputAttrs extends Html.InputAttrs, HtmxAttrs
+structure LabelAttrs extends Html.LabelAttrs, HtmxAttrs
+structure TextareaAttrs extends Html.TextareaAttrs, HtmxAttrs
+structure OptionAttrs extends Html.OptionAttrs, HtmxAttrs
+structure SelectAttrs extends Html.SelectAttrs, HtmxAttrs
+structure ButtonAttrs extends Html.ButtonAttrs, HtmxAttrs
+structure ImgAttrs extends Html.ImgAttrs, HtmxAttrs
+structure ThAttrs extends Html.ThAttrs, HtmxAttrs
+structure TdAttrs extends Html.TdAttrs, HtmxAttrs
 
 end Htmx
