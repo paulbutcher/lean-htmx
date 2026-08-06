@@ -49,11 +49,23 @@ structure HtmxAttrs where
   hxBoost : Option Bool := none
   hxExt : Option String := none
   hxParams : Option String := none
+  /-- `hx-on:<event>`: runs inline JS on a plain DOM event, e.g. `hxOn := [("click", "doThing()")]`.
+  See <https://htmx.org/attributes/hx-on/>. -/
+  hxOn : List (String × String) := []
+  /-- `hx-on::<event>`: runs inline JS on an htmx-dispatched event, using htmx's kebab-case
+  shorthand for its own event names, e.g. `hxOnHtmx := [("before-request", "doThing()")]`.
+  See <https://htmx.org/attributes/hx-on/>. -/
+  hxOnHtmx : List (String × String) := []
 
 /-- One `(name, value)` pair if `v` is present, none otherwise. -/
 private def optPair (name : String) : Option String → List (String × String)
   | none => []
   | some v => [(name, v)]
+
+/-- `pairs` with `pre` prepended to each name. -/
+private def prefixedPairs (pre : String) (pairs : List (String × String)) :
+    List (String × String) :=
+  pairs.map fun (name, value) => (pre ++ name, value)
 
 /-- Flatten to the `(name, value)` pairs `Html`'s `rawAttrs` expects -/
 def HtmxAttrs.toPairs (a : HtmxAttrs) : List (String × String) :=
@@ -66,6 +78,7 @@ def HtmxAttrs.toPairs (a : HtmxAttrs) : List (String × String) :=
     optPair "hx-confirm" a.hxConfirm ++ optPair "hx-indicator" a.hxIndicator ++
     optPair "hx-vals" a.hxVals ++
     (match a.hxBoost with | none => [] | some b => [("hx-boost", if b then "true" else "false")]) ++
-    optPair "hx-ext" a.hxExt ++ optPair "hx-params" a.hxParams
+    optPair "hx-ext" a.hxExt ++ optPair "hx-params" a.hxParams ++
+    prefixedPairs "hx-on:" a.hxOn ++ prefixedPairs "hx-on::" a.hxOnHtmx
 
 end Htmx

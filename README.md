@@ -37,10 +37,20 @@ Render with `Html.Node.render` (or `Html.Node.renderPretty`) as usual.
 `HtmxAttrs` covers the common `hx-*` attributes (`hxGet`, `hxPost`,
 `hxPut`, `hxPatch`, `hxDelete`, `hxTrigger`, `hxTarget`, `hxSwap`,
 `hxSwapOob`, `hxSelect`, `hxSelectOob`, `hxPushUrl`, `hxConfirm`,
-`hxIndicator`, `hxVals`, `hxBoost`, `hxExt`, `hxParams`). `hx-swap` is a
-closed enum (`HxSwap`), so invalid values are rejected at compile time.
-Anything not covered can still be passed through a tag's `rawAttrs`
-parameter, as with plain `Html` tags.
+`hxIndicator`, `hxVals`, `hxBoost`, `hxExt`, `hxParams`, `hxOn`,
+`hxOnHtmx`). `hx-swap` is a closed enum (`HxSwap`), so invalid values are
+rejected at compile time. Anything not covered can still be passed through
+a tag's `rawAttrs` parameter, as with plain `Html` tags.
+
+`hxOn` and `hxOnHtmx` cover `hx-on:<event>` (plain DOM events) and
+`hx-on::<event>` (htmx-dispatched events), each as a `List (String ×
+String)` of `(event, jsCode)` pairs:
+
+```lean
+#eval Html.Node.render
+  (button [] { hxOnHtmx := [("before-request", "console.log('sending')")] })
+-- <button hx-on::before-request="console.log('sending')"></button>
+```
 
 ## License
 

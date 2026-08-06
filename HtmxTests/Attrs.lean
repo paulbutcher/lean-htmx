@@ -25,6 +25,11 @@ open Htmx
 #guard HtmxAttrs.toPairs { hxBoost := false } = [("hx-boost", "false")]  -- explicit, not omitted
 #guard HtmxAttrs.toPairs { hxExt := "json-enc" } = [("hx-ext", "json-enc")]
 #guard HtmxAttrs.toPairs { hxParams := "*" } = [("hx-params", "*")]
+#guard HtmxAttrs.toPairs { hxOn := [("click", "doThing()")] } = [("hx-on:click", "doThing()")]
+#guard HtmxAttrs.toPairs { hxOnHtmx := [("before-request", "doThing()")] }
+  = [("hx-on::before-request", "doThing()")]
+#guard HtmxAttrs.toPairs { hxOnHtmx := [("before-request", "a()"), ("after-request", "b()")] }
+  = [("hx-on::before-request", "a()"), ("hx-on::after-request", "b()")]
 
 #guard HtmxAttrs.toPairs { hxGet := "/x", hxTarget := "#y", hxSwap := some .innerHTML }
   = [("hx-get", "/x"), ("hx-target", "#y"), ("hx-swap", "innerHTML")]
