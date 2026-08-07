@@ -65,16 +65,16 @@ def h6 (children : List (Html.Node .phrasing)) (attrs : HtmxAttrs := {})
   Html.h6 children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
 -- Text: flow content, flow children.
-def ul (children : List (Html.Node .flow)) (attrs : HtmxAttrs := {})
+def ul (children : List (Html.Node .listItem)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.ul children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
-def ol (children : List (Html.Node .flow)) (attrs : OlAttrs := {})
+def ol (children : List (Html.Node .listItem)) (attrs : OlAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.ol children attrs.toOlAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
 
 def li (children : List (Html.Node .flow)) (attrs : LiAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+    (rawAttrs : List (String × String) := []) : Html.Node .listItem :=
   Html.li children attrs.toLiAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
 
 def blockquote (children : List (Html.Node .flow)) (attrs : BlockquoteAttrs := {})
@@ -128,10 +128,10 @@ def textarea (content : String) (attrs : TextareaAttrs := {})
   Html.textarea content attrs.toTextareaAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
 
 def option (label : String) (attrs : OptionAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
+    (rawAttrs : List (String × String) := []) : Html.Node .option :=
   Html.option label attrs.toOptionAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
 
-def select (children : List (Html.Node .phrasing)) (attrs : SelectAttrs := {})
+def select (children : List (Html.Node .selectChild)) (attrs : SelectAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
   Html.select children attrs.toSelectAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
 
@@ -149,28 +149,28 @@ def hr (attrs : HtmxAttrs := {})
   Html.hr attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
 -- Table.
-def table (children : List (Html.Node .flow)) (attrs : HtmxAttrs := {})
+def table (children : List (Html.Node .tableSection)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.table children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
-def thead (children : List (Html.Node .flow)) (attrs : HtmxAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+def thead (children : List (Html.Node .tableRow)) (attrs : HtmxAttrs := {})
+    (rawAttrs : List (String × String) := []) : Html.Node .tableSection :=
   Html.thead children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
-def tbody (children : List (Html.Node .flow)) (attrs : HtmxAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+def tbody (children : List (Html.Node .tableRow)) (attrs : HtmxAttrs := {})
+    (rawAttrs : List (String × String) := []) : Html.Node .tableSection :=
   Html.tbody children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
-def tr (children : List (Html.Node .flow)) (attrs : HtmxAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+def tr (children : List (Html.Node .tableCell)) (attrs : HtmxAttrs := {})
+    (rawAttrs : List (String × String) := []) : Html.Node .tableRow :=
   Html.tr children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
 def th (children : List (Html.Node .flow)) (attrs : ThAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+    (rawAttrs : List (String × String) := []) : Html.Node .tableCell :=
   Html.th children attrs.toThAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
 
 def td (children : List (Html.Node .flow)) (attrs : TdAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
+    (rawAttrs : List (String × String) := []) : Html.Node .tableCell :=
   Html.td children attrs.toTdAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
 
 end Htmx
