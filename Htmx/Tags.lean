@@ -1,16 +1,13 @@
+/-
+Copyright (c) 2026 Paul Butcher. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+
 import Html
 import Htmx.Attrs
 
-/-!
-Thin htmx wrapper tags, one per `Html/Tags.lean` tag. Each has exactly the
-same signature as the matching `Html.*` tag -- a single `attrs` argument
-(`HtmxAttrs`, or a `Htmx.<Tag>Attrs` merging the element's own `Html.<Tag>Attrs`
-with `HtmxAttrs`) plus `rawAttrs`.
--/
-
 namespace Htmx
 
--- Structure: flow content, flow children.
 def div (children : List (Html.Node .flow)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.div children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
@@ -35,7 +32,6 @@ def nav (children : List (Html.Node .flow)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.nav children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
--- Text: flow content, phrasing-only children.
 def p (children : List (Html.Node .phrasing)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.p children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
@@ -64,7 +60,6 @@ def h6 (children : List (Html.Node .phrasing)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.h6 children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
--- Text: flow content, flow children.
 def ul (children : List (Html.Node .listItem)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.ul children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
@@ -89,7 +84,6 @@ def code (children : List (Html.Node .phrasing)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
   Html.code children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
--- Inline.
 def a (attrs : AAttrs) (children : List (Html.Node .phrasing))
     (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
   Html.a attrs.toAAttrs children (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
@@ -110,7 +104,6 @@ def br (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
   Html.br attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
--- Forms.
 def form (children : List (Html.Node .flow)) (attrs : FormAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.form children attrs.toFormAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
@@ -139,7 +132,6 @@ def button (children : List (Html.Node .phrasing)) (attrs : ButtonAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
   Html.button children attrs.toButtonAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
 
--- Media/void.
 def img (attrs : ImgAttrs)
     (rawAttrs : List (String × String) := []) : Html.Node .phrasing :=
   Html.img attrs.toImgAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
@@ -148,7 +140,6 @@ def hr (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.hr attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
--- Table.
 def table (children : List (Html.Node .tableSection)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.table children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)

@@ -1,0 +1,10 @@
+name = "test"
+defaultTargets = ["HtmxTests"]
+testDriver = "HtmxTests"
+
+[[require]]
+name = "htmx"
+path = ".."
+
+[[lean_lib]]
+name = "HtmxTests"

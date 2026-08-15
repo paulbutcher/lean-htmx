@@ -1,3 +1,8 @@
+/-
+Copyright (c) 2026 Paul Butcher. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+
 import Html
 
 namespace Htmx
@@ -33,7 +38,7 @@ def HxSwap.render : HxSwap → String
 
 /-- Typed htmx attributes for one element. `extends Html.HtmlAttrs`, same as
 every `Html.*Attrs` record, so a single `attrs` argument carries both the
-global HTML attributes and the `hx-*` ones -- see the per-element records
+global HTML attributes and the `hx-*` ones; see the per-element records
 below for the elements that also have their own `Html.*Attrs`. -/
 structure HtmxAttrs extends Html.HtmlAttrs where
   hxGet : Option String := none
@@ -73,7 +78,7 @@ private def prefixedPairs (pre : String) (pairs : List (String × String)) :
   pairs.map fun (name, value) => (pre ++ name, value)
 
 /-- Flatten the `hx-*` fields to the `(name, value)` pairs `Html`'s `rawAttrs`
-expects. The inherited `Html.HtmlAttrs` fields aren't included here -- those
+expects. The inherited `Html.HtmlAttrs` fields aren't included here; those
 render through the normal `Html.*Attrs.render` path via each tag's
 `toHtmlAttrs`/`to<Tag>Attrs` projection. -/
 def HtmxAttrs.toPairs (a : HtmxAttrs) : List (String × String) :=
@@ -89,10 +94,9 @@ def HtmxAttrs.toPairs (a : HtmxAttrs) : List (String × String) :=
     optPair "hx-ext" a.hxExt ++ optPair "hx-params" a.hxParams ++
     prefixedPairs "hx-on:" a.hxOn ++ prefixedPairs "hx-on::" a.hxOnHtmx
 
-/-! Per-element merged attrs: `Html.<Tag>Attrs` (itself `extends Html.HtmlAttrs`) plus
-`HtmxAttrs`, sharing the inherited `Html.HtmlAttrs` fields via Lean's diamond structure
-inheritance. Each gives the matching `Htmx.<tag>` wrapper in `Htmx/Tags.lean` a single
-`attrs` argument, exactly like the corresponding `Html.<tag>`. -/
+/-! Per-element merged attrs, for the elements that have their own `Html.<Tag>Attrs`.
+Each gives the matching `Htmx.<tag>` wrapper in `Htmx/Tags.lean` a single `attrs`
+argument, exactly like the corresponding `Html.<tag>`. -/
 
 structure OlAttrs extends Html.OlAttrs, HtmxAttrs
 structure LiAttrs extends Html.LiAttrs, HtmxAttrs

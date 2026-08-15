@@ -1,8 +1,19 @@
+/-
+Copyright (c) 2026 Paul Butcher. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+
 import Htmx.Attrs
 
 namespace HtmxTests
 
 open Htmx
+
+/-- Two `HxSwap` constructors rendering to the same string would silently give an
+element the wrong swap behaviour, so rule it out across the whole enum rather than
+sampling constructors. -/
+theorem hxSwap_render_injective {a b : HxSwap} (h : a.render = b.render) : a = b := by
+  cases a <;> cases b <;> simp_all [HxSwap.render]
 
 #guard HtmxAttrs.toPairs {} = []
 #guard HtmxAttrs.toPairs { hxGet := "/x" } = [("hx-get", "/x")]
