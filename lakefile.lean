@@ -7,9 +7,9 @@ import Lake
 open Lake DSL
 
 package htmx where
-  version := v!"0.5.0"
+  version := v!"0.6.0"
 
-require html from git "https://github.com/paulbutcher/lean-html" @ "v0.6.0"
+require html from git "https://github.com/paulbutcher/lean-html" @ "v0.7.0"
 
 @[default_target]
 lean_lib Htmx

@@ -2,8 +2,11 @@
 Copyright (c) 2026 Paul Butcher. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+module
 
-import Html
+public import Html
+
+public section
 
 namespace Htmx
 
@@ -26,7 +29,9 @@ scoped instance : Coe String (Option String) := ⟨some⟩
 /-- Same rationale, for `hxBoost : Option Bool`. -/
 scoped instance : Coe Bool (Option Bool) := ⟨some⟩
 
-def HxSwap.render : HxSwap → String
+-- Exposed, unlike the rest of this module, so that callers can reason about
+-- the mapping by unfolding it.
+@[expose] def HxSwap.render : HxSwap → String
   | .innerHTML => "innerHTML"
   | .outerHTML => "outerHTML"
   | .beforebegin => "beforebegin"
