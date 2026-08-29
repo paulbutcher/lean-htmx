@@ -2,6 +2,9 @@ name = "test"
 defaultTargets = ["HtmxTests"]
 testDriver = "HtmxTests"
 
+[leanOptions]
+warningAsError = true
+
 [[require]]
 name = "htmx"
 path = ".."
