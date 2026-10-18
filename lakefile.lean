@@ -7,7 +7,7 @@ import Lake
 open Lake DSL
 
 package htmx where
-  version := v!"0.6.1"
+  version := v!"0.6.2"
   leanOptions := #[⟨`warningAsError, true⟩]
 
 require html from git "https://github.com/paulbutcher/lean-html" @ "v0.10.1"
