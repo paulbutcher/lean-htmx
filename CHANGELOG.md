@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.0] - 2026-10-30
+
+* Breaking: `table` now takes a `TableBody` and optional caption, column groups, head and foot, following html 0.12.0
+* Add `tfoot`
+* Bump Lean to 4.35.0
+
 ## [0.6.2] - 2026-10-18
 
 Chore: Bump dependencies
