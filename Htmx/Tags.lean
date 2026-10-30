@@ -143,17 +143,24 @@ def hr (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.hr attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
-def table (children : List (Html.Node .tableSection)) (attrs : HtmxAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .flow :=
-  Html.table children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
+def table (body : Html.TableBody := .sections []) (attrs : HtmxAttrs := {})
+    (rawAttrs : List (String × String) := []) (caption : Option (Html.Node .tableCaption) := none)
+    (colgroups : List (Html.Node .tableColumnGroup) := [])
+    (thead : Option (Html.Node .tableHead) := none)
+    (tfoot : Option (Html.Node .tableFoot) := none) : Html.Node .flow :=
+  Html.table body attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs) caption colgroups thead tfoot
 
 def thead (children : List (Html.Node .tableRow)) (attrs : HtmxAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .tableSection :=
+    (rawAttrs : List (String × String) := []) : Html.Node .tableHead :=
   Html.thead children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
 def tbody (children : List (Html.Node .tableRow)) (attrs : HtmxAttrs := {})
-    (rawAttrs : List (String × String) := []) : Html.Node .tableSection :=
+    (rawAttrs : List (String × String) := []) : Html.Node .tableBody :=
   Html.tbody children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
+
+def tfoot (children : List (Html.Node .tableRow)) (attrs : HtmxAttrs := {})
+    (rawAttrs : List (String × String) := []) : Html.Node .tableFoot :=
+  Html.tfoot children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
 def tr (children : List (Html.Node .tableCell)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .tableRow :=
