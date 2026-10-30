@@ -51,9 +51,10 @@ open Htmx
 #guard Html.Node.render (img { src := "a.png", alt := "d", hxGet := "/refresh" })
   = "<img src=\"a.png\" alt=\"d\" hx-get=\"/refresh\">"
 #guard Html.Node.render (hr { hxGet := "/x" }) = "<hr hx-get=\"/x\">"
-#guard Html.Node.render (table [] { hxGet := "/x" }) = "<table hx-get=\"/x\"></table>"
+#guard Html.Node.render (table (attrs := { hxGet := "/x" })) = "<table hx-get=\"/x\"></table>"
 #guard Html.Node.render (thead [] { hxGet := "/x" }) = "<thead hx-get=\"/x\"></thead>"
 #guard Html.Node.render (tbody [] { hxGet := "/x" }) = "<tbody hx-get=\"/x\"></tbody>"
+#guard Html.Node.render (tfoot [] { hxGet := "/x" }) = "<tfoot hx-get=\"/x\"></tfoot>"
 #guard Html.Node.render (tr [td [] { hxGet := "/x" }]) = "<tr><td hx-get=\"/x\"></td></tr>"
 #guard Html.Node.render (th [] { hxGet := "/x" }) = "<th hx-get=\"/x\"></th>"
 

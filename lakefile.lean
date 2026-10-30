@@ -10,7 +10,7 @@ package htmx where
   version := v!"0.6.2"
   leanOptions := #[⟨`warningAsError, true⟩]
 
-require html from git "https://github.com/paulbutcher/lean-html" @ "v0.11.0"
+require html from git "https://github.com/paulbutcher/lean-html" @ "v0.12.0"
 
 @[default_target]
 lean_lib Htmx
