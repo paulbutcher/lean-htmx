@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.8.0] - 2026-11-01
+
+* Breaking: list and table children take html 0.13.0's `…OrScript` categories, such as `Node .listItemOrScript` for `ul`
+* Bump html to 0.13.0
+
 ## [0.7.0] - 2026-10-30
 
 * Breaking: `table` now takes a `TableBody` and optional caption, column groups, head and foot, following html 0.12.0
