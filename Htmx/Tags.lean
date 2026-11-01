@@ -63,11 +63,11 @@ def h6 (children : List (Html.Node .phrasing)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.h6 children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
-def ul (children : List (Html.Node .listItem)) (attrs : HtmxAttrs := {})
+def ul (children : List (Html.Node .listItemOrScript)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.ul children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
-def ol (children : List (Html.Node .listItem)) (attrs : OlAttrs := {})
+def ol (children : List (Html.Node .listItemOrScript)) (attrs : OlAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .flow :=
   Html.ol children attrs.toOlAttrs (attrs.toHtmxAttrs.toPairs ++ rawAttrs)
 
@@ -145,24 +145,24 @@ def hr (attrs : HtmxAttrs := {})
 
 def table (body : Html.TableBody := .sections []) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) (caption : Option (Html.Node .tableCaption) := none)
-    (colgroups : List (Html.Node .tableColumnGroup) := [])
+    (colgroups : List (Html.Node .tableColumnGroupOrScript) := [])
     (thead : Option (Html.Node .tableHead) := none)
     (tfoot : Option (Html.Node .tableFoot) := none) : Html.Node .flow :=
   Html.table body attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs) caption colgroups thead tfoot
 
-def thead (children : List (Html.Node .tableRow)) (attrs : HtmxAttrs := {})
+def thead (children : List (Html.Node .tableRowOrScript)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .tableHead :=
   Html.thead children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
-def tbody (children : List (Html.Node .tableRow)) (attrs : HtmxAttrs := {})
+def tbody (children : List (Html.Node .tableRowOrScript)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .tableBody :=
   Html.tbody children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
-def tfoot (children : List (Html.Node .tableRow)) (attrs : HtmxAttrs := {})
+def tfoot (children : List (Html.Node .tableRowOrScript)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .tableFoot :=
   Html.tfoot children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
-def tr (children : List (Html.Node .tableCell)) (attrs : HtmxAttrs := {})
+def tr (children : List (Html.Node .tableCellOrScript)) (attrs : HtmxAttrs := {})
     (rawAttrs : List (String × String) := []) : Html.Node .tableRow :=
   Html.tr children attrs.toHtmlAttrs (attrs.toPairs ++ rawAttrs)
 
