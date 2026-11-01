@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.8.1] - 2026-11-01
+
+* Bump html to 0.14.0
+
 ## [0.8.0] - 2026-11-01
 
 * Breaking: list and table children take html 0.13.0's `…OrScript` categories, such as `Node .listItemOrScript` for `ul`
