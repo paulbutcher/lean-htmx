@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.1] - 2026-11-24
+
+* Bump html to 0.15.1
+
 ## [0.9.0] - 2026-11-24
 
 * Breaking: Bump Lean to 4.36.0, which consumers must also use
